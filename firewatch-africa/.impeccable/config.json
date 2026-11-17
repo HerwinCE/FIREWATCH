@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/polish.css"
+        ],
+        "createdAt": "2026-11-14T22:23:33.496Z",
+        "reason": "Cahier des charges FIREWATCH AFRICA §5.7 (Anomaly Banner) et §5.6 (KPI alerte) imposent une bordure gauche de 4 px"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/src/styles/firewatch.css"
+        ],
+        "createdAt": "2026-11-15T04:05:11.712Z",
+        "reason": "Claude triage: L415 is a 2px neutral table-of-contents rail (standard nav pattern, not an accent card); toast accent at L464 was removed"
+      }
+    ]
+  }
+}

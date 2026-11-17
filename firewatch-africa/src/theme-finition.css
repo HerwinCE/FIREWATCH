@@ -1,0 +1,102 @@
+/* =====================================================================
+   Finitions — chargé en tout dernier.
+   1) En-têtes sans chevauchement  2) Choix MODIS / VIIRS sobre et élégant
+   3) Verre dépoli discret, réservé aux éléments qui flottent.
+   ===================================================================== */
+
+/* ---------- 1. En-tête des pages : le titre garde sa place, les badges cèdent la leur ---------- */
+[data-theme] .fw-topbar { gap: 12px; padding-right: clamp(12px, 1.2vw, 24px); overflow: hidden; }
+[data-theme] .fw-topbar__title { flex: 0 1 auto; min-width: 150px; max-width: 34vw; overflow: hidden; }
+[data-theme] .fw-topbar__title .fw-crumbs, [data-theme] .fw-topbar__title h1 { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-theme] .fw-topbar__title .fw-crumbs { line-height: 1.3; margin-bottom: 1px; }
+[data-theme] .fw-topbar__title h1 { line-height: 1.15; }
+[data-theme] .fw-topbar__spacer { flex: 1 1 0; min-width: 8px; }
+[data-theme] .fw-topbar > .hide-mobile { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.fw-topbar__chips { flex-wrap: nowrap; overflow: hidden; justify-content: flex-end; gap: 6px; }
+.fw-topbar__chips > * { flex-shrink: 0; }
+.fw-topbar__chips .nx-chip, .fw-topbar .harmo-btn > button, [data-theme] .fw-topbar .fw-fresh { white-space: nowrap; }
+[data-theme] .fw-topbar .fw-fresh { flex-shrink: 0; }
+/* Le message d'harmonisation s'affiche sous l'en-tête, sans être coupé par lui. */
+.fw-topbar .harmo-btn .notice-pop { position: fixed; top: calc(var(--fw-size-topbar) + 8px); right: 16px; z-index: 50; }
+/* Ordre de retrait quand la place manque : « Monde », « NASA FIRMS », « MODIS + VIIRS harmonisés », puis la date longue. */
+@media (max-width: 1720px) { .fw-topbar__chips .nx-chip--ember { display: none; } }
+@media (max-width: 1560px) { .fw-topbar__chips > .nx-chip:not(.nx-chip--alert):not(.nx-chip--ember):first-of-type { display: none; } }
+@media (max-width: 1400px) { .fw-topbar__chips > .nx-chip:not(.nx-chip--alert) { display: none; } [data-theme] .fw-topbar .txt-long { display: none; } }
+@media (max-width: 1180px) { [data-theme] .fw-topbar .fw-fresh { display: none; } }
+
+/* En-tête de la carte : même règle. */
+.ops-header { gap: 10px !important; overflow: hidden; }
+.ops-brand { flex-shrink: 0; min-width: 0; }
+.ops-brand > span { min-width: 0; }
+.ops-brand small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ops-live, .ops-alert, .ops-header__actions > * { flex-shrink: 0; white-space: nowrap; }
+.ops-header__actions { display: flex; gap: 6px; align-items: center; }
+.ops-header .sensor-toggle { flex-shrink: 0; margin-left: auto; }
+@media (max-width: 1500px) { .ops-live { display: none !important; } }
+@media (max-width: 1280px) { .ops-header__actions a { display: none; } .ops-brand small { display: none; } }
+@media (max-width: 1100px) { .ops-header .sensor-toggle { display: none; } }
+
+/* ---------- 2. Choix MODIS / VIIRS ----------
+   Surface neutre en verre ; la sélection se lit à la case cochée (couleur du capteur),
+   à un fond légèrement surélevé et à un liseré fin. Aucun aplat coloré. */
+.sensor-toggle {
+  display: inline-flex; align-items: stretch; gap: 4px; padding: 4px; border-radius: 14px; flex-wrap: nowrap;
+  background: color-mix(in srgb, var(--fw-color-text-primary) 4%, transparent);
+  border: 1px solid var(--fw-color-border-default);
+  -webkit-backdrop-filter: blur(10px) saturate(140%); backdrop-filter: blur(10px) saturate(140%);
+}
+.sensor-toggle__btn {
+  position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: var(--c-h, 42px); padding: 6px 14px 6px 9px; border-radius: 10px; cursor: pointer;
+  font: inherit; text-align: left; white-space: nowrap; color: var(--fw-color-text-muted); background: transparent; border: 1px solid transparent;
+}
+.sensor-toggle__btn.is-modis { --sc: #CC79A7; }
+.sensor-toggle__btn.is-viirs { --sc: #E69F00; }
+[data-theme="light"] .toolbar .sensor-toggle__btn.is-modis { --sc: #A8508A; }
+[data-theme="light"] .toolbar .sensor-toggle__btn.is-viirs { --sc: #A86F00; }
+.sensor-toggle__btn:hover { color: var(--fw-color-text-primary); background: color-mix(in srgb, var(--fw-color-text-primary) 5%, transparent); }
+.sensor-toggle__btn[aria-pressed="true"] {
+  color: var(--fw-color-text-primary); background: var(--fw-color-bg-surface2);
+  border-color: color-mix(in srgb, var(--sc) 42%, var(--fw-color-border-default));
+  box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-theme="light"] .toolbar .sensor-toggle__btn[aria-pressed="true"] { background: #FFFFFF; box-shadow: 0 1px 2px rgba(11,22,40,.08), 0 4px 12px rgba(11,22,40,.06); }
+.sensor-toggle__check {
+  display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; color: #FFFFFF;
+  border: 1.5px solid var(--fw-color-border-strong); background: transparent; transition: background-color 180ms, border-color 180ms, transform 180ms;
+}
+.sensor-toggle__btn[aria-pressed="true"] .sensor-toggle__check { background: var(--sc); border-color: var(--sc); transform: scale(1.04); }
+.sensor-toggle__btn.is-viirs[aria-pressed="true"] .sensor-toggle__check { color: #1A1300; }
+[data-theme="light"] .toolbar .sensor-toggle__btn.is-viirs[aria-pressed="true"] .sensor-toggle__check { color: #FFFFFF; }
+.sensor-toggle__txt { display: grid; line-height: 1.2; }
+.sensor-toggle__txt b { font-family: var(--fw-font-display); font-size: var(--t-md, 15px); font-weight: 700; letter-spacing: .02em; color: inherit; }
+.sensor-toggle__txt small { font-size: var(--t-xs, 11.5px); color: var(--fw-color-text-muted); }
+.sensor-toggle__btn:not([aria-pressed="true"]) :is(.sat-glyph, .sym) { opacity: .4; filter: grayscale(.6); }
+.sensor-toggle__state { align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px 0 6px; font-size: var(--t-xs, 12px); font-weight: 700; color: var(--br-primary-text); white-space: nowrap; }
+.sensor-toggle.is-compact { padding: 3px; gap: 3px; border-radius: 12px; }
+.sensor-toggle.is-compact .sensor-toggle__btn { min-height: var(--c-h-sm, 34px); padding: 3px 11px 3px 6px; gap: 7px; }
+.sensor-toggle.is-compact .sensor-toggle__check { width: 17px; height: 17px; border-radius: 5px; }
+.sensor-toggle__btn.is-nudge { animation: st-nudge 420ms ease; }
+@keyframes st-nudge { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+/* Sur la carte (toujours sombre) : verre foncé, jamais de bloc clair. */
+.operations-map .sensor-toggle { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.10); }
+.operations-map .sensor-toggle__btn[aria-pressed="true"] { background: rgba(255,255,255,.07); }
+.toolbar .sensor-toggle { margin-right: 6px; }
+.mtool .sensor-toggle { display: flex; }
+.mtool .sensor-toggle__btn { flex: 1; white-space: normal; }
+.mtool .sensor-toggle__state { display: none; }
+
+/* ---------- 3. Verre dépoli : seulement sur ce qui flotte (en-tête, barre d'outils, filtres) ---------- */
+[data-theme] .fw-topbar { -webkit-backdrop-filter: blur(16px) saturate(150%); backdrop-filter: blur(16px) saturate(150%); }
+:root:not([data-theme="light"]) .fw-topbar { background: rgba(20,22,26,.80) !important; }
+[data-theme="light"] .fw-topbar { background: rgba(16,20,26,.88) !important; }
+:root:not([data-theme="light"]) :is(.toolbar, .fold) {
+  background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.01) 50%), rgba(26,29,34,.72) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
+}
+[data-theme="light"] :is(.toolbar, .fold) {
+  background: rgba(255,255,255,.80) !important; border-color: rgba(11,22,40,.08) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: 0 1px 2px rgba(11,22,40,.05), 0 8px 24px rgba(11,22,40,.06) !important;
+}
+[data-theme="light"] .fold__toggle { background: transparent !important; }
+[data-theme="light"] .fold__title { color: var(--fw-color-text-primary) !important; }

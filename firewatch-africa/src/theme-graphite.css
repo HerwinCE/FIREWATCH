@@ -1,0 +1,154 @@
+/* =====================================================================
+   Thème « Graphite » — chargé en dernier.
+   Fond anthracite neutre (ni noir pur, ni bleu) ; une seule teinte d'action,
+   un turquoise adouci ; le bleu ne sert plus qu'à l'information.
+   Hiérarchie visuelle, du plus fort au plus discret :
+     1. danger / alerte critique   rouge, plein, animé (si effets actifs)
+     2. alerte importante          orange / ambre, teinté
+     3. information utile          bleu doux, teinté léger
+     4. donnée secondaire          gris, plus petit, sans fond
+   Contrastes vérifiés : texte ≥ 6,5:1, discret ≥ 5,7:1, couleurs d'état ≥ 4,9:1.
+   ===================================================================== */
+:root:not([data-theme="light"]),
+[data-theme="light"] :is(.operations-map, .map, .cwin, .fw-tip),
+html[data-theme="light"]:has(.operations-map) .qp-root {
+  --fw-color-bg-base: #121418; --fw-color-bg-sunken: #0E1013;
+  --fw-color-bg-surface1: #1A1D22; --fw-color-bg-surface2: #20242A; --fw-color-bg-surface3: #282D34;
+  --fw-color-border-subtle: rgba(255,255,255,.07); --fw-color-border-default: rgba(255,255,255,.12); --fw-color-border-strong: rgba(255,255,255,.26);
+  --fw-color-text-primary: #ECEEF1; --fw-color-text-secondary: #C3C8D0; --fw-color-text-muted: #9AA2AE;
+  --fw-color-chart-grid: rgba(255,255,255,.07); --fw-color-chart-axis: #9AA2AE;
+  --br-primary: #4FBFAD; --br-primary-hover: #66CDBC; --br-primary-pressed: #3FA696; --br-on-primary: #0B1F1B;
+  --br-primary-tint: rgba(79,191,173,.13); --br-primary-text: #8ED9CB; --br-link: #8ED9CB;
+  --br-table-head-bg: rgba(255,255,255,.04); --br-table-head-text: #C3C8D0;
+  --br-focus-ring: 0 0 0 2px #121418, 0 0 0 4px #4FBFAD;
+  --tone-forest-bg: rgba(79,191,173,.09); --tone-forest-ink: #8ED9CB; --tone-forest-line: rgba(79,191,173,.24);
+  --tone-info-bg: rgba(155,184,224,.09); --tone-info-ink: #9BB8E0; --tone-info-line: rgba(155,184,224,.24);
+  --tone-ember-bg: rgba(255,138,87,.10); --tone-ember-ink: #FFAE7A; --tone-ember-line: rgba(255,138,87,.30);
+  --tone-sand-bg: rgba(233,180,76,.08); --tone-sand-ink: #E9C46A; --tone-sand-line: rgba(233,180,76,.24);
+  --glass-bg: rgba(28,31,37,.70); --glass-bg-strong: rgba(28,31,37,.86); --glass-line: rgba(255,255,255,.11);
+  --glass-shadow: 0 16px 40px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05);
+  --mg-bg: linear-gradient(160deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.015) 40%, rgba(255,255,255,0) 100%), rgba(24,27,32,.80);
+  --mg-bg-strong: linear-gradient(160deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.01) 40%, rgba(255,255,255,0) 100%), rgba(24,27,32,.93);
+  --mg-line: rgba(255,255,255,.13); --mg-shadow: 0 16px 40px rgba(0,0,0,.48), 0 2px 6px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.07);
+  --mg-ink: #ECEEF1; --mg-ink-2: #C3C8D0; --mg-hover: rgba(79,191,173,.13); --mg-hover-line: rgba(79,191,173,.45);
+  --mg-tile: rgba(255,255,255,.045); --mg-tile-line: rgba(255,255,255,.10);
+  --chrome-side: #121418; --chrome-top: rgba(20,22,26,.88);
+  --cal-0: #22262C; --cal-0-line: #30353D; --hm-hatch: #4A515B;
+  /* Couleurs d'état (hiérarchie) */
+  --st-crit: #FF5C78; --st-danger: #F27A6E; --st-warn: #E9B44C; --st-info: #9BB8E0; --st-ok: #6FD39C; --st-note: #9AA2AE;
+  --nx-page-bg:
+    radial-gradient(1000px 560px at 0% -10%, rgba(79,191,173,.07), transparent 60%),
+    radial-gradient(900px 600px at 100% 110%, rgba(255,138,87,.06), transparent 60%),
+    linear-gradient(180deg, #15181C 0%, #121418 100%);
+}
+[data-theme="light"] { --st-crit: #B3002D; --st-danger: #B42318; --st-warn: #8A5A00; --st-info: #2E5A8F; --st-ok: #1E7A4A; --st-note: #56647D; }
+
+/* ---------- Surfaces : anthracite, plus aucune teinte bleue ---------- */
+:root:not([data-theme="light"]) .fw-sidebar {
+  background: radial-gradient(380px 240px at 0% 0%, rgba(79,191,173,.07), transparent 70%), linear-gradient(180deg, #16191D 0%, #111316 100%) !important;
+  border-right: 1px solid rgba(255,255,255,.07) !important;
+}
+:root:not([data-theme="light"]) .fw-topbar { background: rgba(20,22,26,.88) !important; border-bottom-color: rgba(255,255,255,.07) !important; }
+:root:not([data-theme="light"]) :is(.card, .stat, .toolbar, .fold, .method__block, .evcard, .nx-kpi) {
+  background: linear-gradient(160deg, rgba(255,255,255,.045) 0%, rgba(255,255,255,0) 45%), var(--glass-bg-strong) !important;
+  border-color: var(--glass-line) !important; box-shadow: 0 12px 30px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+:root:not([data-theme="light"]) .nx-kpi--hot { background: linear-gradient(180deg, rgba(255,138,87,.13), rgba(255,138,87,0) 70%), var(--glass-bg-strong) !important; border-color: rgba(255,138,87,.38) !important; }
+:root:not([data-theme="light"]) .hero {
+  background: radial-gradient(520px 320px at 92% 8%, rgba(255,138,87,.22), transparent 70%), radial-gradient(560px 320px at 0% 100%, rgba(79,191,173,.14), transparent 70%),
+    linear-gradient(135deg, #1D2126 0%, #15181C 100%) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+.method__intro { background: radial-gradient(520px 300px at 95% 0%, rgba(255,138,87,.18), transparent 70%), linear-gradient(135deg, #1D2126 0%, #15181C 100%) !important; border-color: rgba(255,255,255,.10) !important; }
+.operations-map { background: #111316 !important; }
+:root:not([data-theme="light"]) .ops-header, [data-theme="light"] .operations-map .ops-header { background: rgba(20,22,26,.90) !important; border-bottom-color: rgba(255,255,255,.07) !important; }
+.al-banner { background: linear-gradient(100deg, color-mix(in srgb, var(--al) 30%, rgba(24,27,32,.94)), rgba(24,27,32,.95) 70%) !important; }
+.ai__bubble { background: rgba(255,255,255,.045) !important; }
+.ai__form { background: rgba(255,255,255,.035) !important; }
+.ai__chips button { background: rgba(255,255,255,.04) !important; }
+.mrail__badge { box-shadow: 0 0 0 2px #1A1D22 !important; }
+.ai__orb { background: linear-gradient(135deg, #4FBFAD, #E9C46A) !important; }
+.ai__avatar { background: linear-gradient(135deg, #4FBFAD, #9BB8E0) !important; }
+
+/* ---------- Sélection : fond teinté, liseré, coche, transition douce ---------- */
+:where(button, a, [role="tab"], .chip, .seg button, .map-display__opt, .cwin__periods button, .tdock__seg button) {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+:where(button, .chip, a.btn):active:not(:disabled) { transform: scale(.97); }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: none; box-shadow: 0 0 0 2px var(--fw-color-bg-base, #121418), 0 0 0 4px var(--br-primary) !important; }
+[data-theme] .chip[aria-pressed="true"], .hfilters .chip[aria-pressed="true"] {
+  background: var(--br-primary-tint) !important; border-color: color-mix(in srgb, var(--br-primary) 70%, transparent) !important; color: var(--fw-color-text-primary) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--br-primary) 35%, transparent);
+}
+[data-theme] .chip[aria-pressed="true"]::before { content: ""; width: 7px; height: 7px; margin-right: 2px; border-radius: 50%; background: var(--br-primary); box-shadow: 0 0 8px var(--br-primary); }
+[data-theme] .chip:not([aria-pressed="true"]) { opacity: .85; }
+[data-theme] .chip:hover { opacity: 1; border-color: var(--fw-color-border-strong); }
+[data-theme] .seg button[aria-pressed="true"], .tdock__seg button[aria-pressed="true"], .map-display__seg button[aria-pressed="true"] {
+  background: var(--br-primary) !important; color: var(--br-on-primary) !important; box-shadow: 0 2px 10px color-mix(in srgb, var(--br-primary) 35%, transparent) !important;
+}
+[data-theme] .fw-nav__item[aria-current="page"] {
+  background: linear-gradient(90deg, rgba(79,191,173,.16), rgba(79,191,173,.03)) !important; border-color: rgba(79,191,173,.26) !important; box-shadow: none !important;
+}
+[data-theme] .fw-nav__item[aria-current="page"]::before { background: var(--br-primary) !important; box-shadow: 0 0 10px rgba(79,191,173,.6) !important; }
+[data-theme] .fw-nav__item[aria-current="page"] svg { color: var(--br-primary-text) !important; filter: none !important; }
+
+/* ---------- Choix MODIS / VIIRS ---------- */
+
+/* ---------- Bouton d'harmonisation ---------- */
+.harmo-btn { position: relative; display: inline-flex; }
+.harmo-btn > button { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: inherit; color: var(--br-on-primary);
+  background: linear-gradient(135deg, var(--br-primary), var(--br-primary-pressed)); border: 0; box-shadow: 0 4px 14px rgba(79,191,173,.25); }
+.harmo-btn > button:hover:not(:disabled) { background: linear-gradient(135deg, var(--br-primary-hover), var(--br-primary)); box-shadow: 0 6px 18px rgba(79,191,173,.35); }
+.harmo-btn > button:disabled { cursor: progress; background: rgba(79,191,173,.18); color: var(--br-primary-text); box-shadow: none; }
+.harmo-btn.is-chip > button { height: var(--c-h-sm, 34px); padding: 0 13px 0 10px; border-radius: 99px; font-size: var(--t-xs, 12px); font-weight: 800; letter-spacing: .01em; }
+.harmo-btn.is-block, .harmo-btn.is-block > button { width: 100%; }
+.harmo-btn.is-block > button { min-height: 54px; padding: 8px 14px; border-radius: 14px; text-align: left; }
+.harmo-btn__icon { display: grid; place-items: center; }
+.harmo-btn__icon.is-spin svg { animation: hb-spin 1s linear infinite; }
+@keyframes hb-spin { to { transform: rotate(360deg); } }
+.harmo-btn__txt { display: grid; line-height: 1.25; }
+.harmo-btn__txt b { font-size: var(--t-sm, 13.5px); font-weight: 800; }
+.harmo-btn__txt small { font-size: var(--t-xs, 11.5px); font-weight: 600; opacity: .85; }
+.harmo-btn .notice-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: max-content; max-width: 340px; }
+.harmo-btn.is-block .notice-pop { position: static; margin-top: 8px; width: auto; max-width: none; }
+
+/* =====================================================================
+   Messages par type : chaque nature de contenu a sa couleur, son icône,
+   sa force. Pas de barre latérale : fond teinté + liseré complet + icône.
+   ===================================================================== */
+.notice-pop, .notice, .anomaly, .ops-note, .ai__notice, .notice--sci {
+  --mk: var(--st-info);
+  display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-radius: 12px; font-size: var(--t-sm, 13.5px); line-height: 1.5;
+  color: var(--fw-color-text-primary) !important;
+  background: color-mix(in srgb, var(--mk) 10%, transparent) !important; border: 1px solid color-mix(in srgb, var(--mk) 38%, transparent) !important;
+}
+.notice-pop > svg, .anomaly > svg { color: var(--mk); flex-shrink: 0; margin-top: 2px; }
+.notice-pop > span { flex: 1; }
+.notice-pop > button { display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 7px; cursor: pointer; background: transparent; color: var(--fw-color-text-secondary); }
+.notice-pop { box-shadow: 0 12px 30px rgba(0,0,0,.35); background: color-mix(in srgb, var(--mk) 14%, var(--fw-color-bg-surface1)) !important; }
+/* 1. danger */
+.notice[role="alert"], .notice-pop.is-danger, .anomaly--error { --mk: var(--st-danger); }
+.notice[role="alert"] { font-weight: 600; }
+/* 2. alerte importante */
+.anomaly--up, .ai__notice { --mk: var(--st-warn); }
+.anomaly--up b { color: var(--st-warn); }
+/* 3. information */
+.notice--sci, .ops-note, .notice-pop.is-info, .anomaly--down, .anomaly--loading { --mk: var(--st-info); }
+.notice-pop.is-success, .anomaly--normal { --mk: var(--st-ok); }
+.anomaly { align-items: center; }
+.anomaly p { margin: 0; flex: 1; }
+.anomaly__link { flex-shrink: 0; border-radius: 9px; padding: 6px 11px; cursor: pointer; font: inherit; font-size: var(--t-xs, 12px); font-weight: 750;
+  color: var(--fw-color-text-primary); background: color-mix(in srgb, var(--mk) 18%, transparent); border: 1px solid color-mix(in srgb, var(--mk) 45%, transparent); }
+/* 4. donnée secondaire : sans fond, plus petite, grise */
+.map-note, .method__note, .fw-page > p.muted.small:last-of-type, .nx-chart__cap, .ai__foot, .cwin__foot, .tdock__note { color: var(--st-note) !important; }
+.map-note { background: var(--mg-bg) !important; }
+.fw-page > p.muted.small:last-of-type { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--fw-color-border-subtle); font-size: var(--t-xs, 12px); }
+
+/* ---------- Hiérarchie : l'œil va d'abord au danger, puis aux chiffres clés ---------- */
+.nx-section__title { color: var(--fw-color-text-muted) !important; }
+.nx-kpi b { color: var(--fw-color-text-primary); }
+.nx-kpi--hot b { color: var(--tone-ember-ink) !important; }
+.nx-kpi p, .card__head .muted { color: var(--fw-color-text-muted) !important; }
+[data-theme] .card__title { color: var(--fw-color-text-primary) !important; }
+
+@media (prefers-reduced-motion: reduce) { .harmo-btn__icon.is-spin svg, .sensor-toggle__btn.is-nudge { animation: none; } }

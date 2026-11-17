@@ -1,0 +1,227 @@
+/* =====================================================================
+   Verre de carte : UN seul style pour tout ce qui flotte sur la carte
+   (boutons de vue, Affichage, zoom Mapbox, rail, panneaux, fenêtre de zone,
+   bulles, notes). Même fond, même liseré, même reflet, mêmes rayons.
+   Chargé après theme-nuit.css.
+   ===================================================================== */
+/* Verre bleu profond : bleu marine saturé, reflet froid en haut à gauche, liseré bleu acier. */
+:root:not([data-theme="light"]) {
+  --mg-bg: linear-gradient(155deg, rgba(150,195,255,.20) 0%, rgba(80,130,230,.05) 35%, rgba(0,0,0,0) 70%), rgba(34,64,116,.70);
+  --mg-bg-strong: linear-gradient(155deg, rgba(150,195,255,.16) 0%, rgba(80,130,230,.04) 35%, rgba(0,0,0,0) 70%), rgba(30,58,108,.88);
+  --mg-line: rgba(160,200,255,.32);
+  --mg-shadow: 0 18px 44px rgba(6,16,40,.40), 0 2px 8px rgba(6,16,40,.22), inset 0 1px 0 rgba(170,205,255,.18), inset 0 0 0 1px rgba(255,255,255,.02);
+  --mg-ink: #EAF1FF; --mg-ink-2: #CAD7EF;
+  --mg-hover: rgba(79,191,173,.14); --mg-hover-line: rgba(79,191,173,.50);
+  --mg-tile: rgba(110,160,255,.07); --mg-tile-line: rgba(130,175,255,.16);
+  /* Les cartes et fenêtres du reste de l'application prennent le même verre bleu. */
+  --glass-bg: rgba(36,66,120,.58); --glass-bg-strong: rgba(32,60,110,.80); --glass-line: rgba(130,175,255,.22);
+  --glass-shadow: 0 18px 44px rgba(6,16,40,.34), inset 0 1px 0 rgba(170,205,255,.14);
+}
+[data-theme="light"] {
+  --mg-bg: linear-gradient(160deg, rgba(255,255,255,.95), rgba(255,255,255,.78)), rgba(255,255,255,.7);
+  --mg-bg-strong: linear-gradient(160deg, rgba(255,255,255,.98), rgba(250,252,255,.94));
+  --mg-line: rgba(255,255,255,.9);
+  --mg-shadow: 0 12px 30px rgba(11,22,40,.16), 0 2px 6px rgba(11,22,40,.08), inset 0 1px 0 #FFFFFF;
+  --mg-ink: #0B1628; --mg-ink-2: #34435C;
+  --mg-hover: rgba(14,116,144,.10); --mg-hover-line: rgba(14,116,144,.40);
+  --mg-tile: rgba(11,22,40,.03); --mg-tile-line: rgba(11,22,40,.10);
+}
+
+/* ---------- Conteneurs flottants ---------- */
+.map__views, .map-display__toggle, .mapboxgl-ctrl-group, .map-note, .map-hint, .ops-coordinates, .mrail, .qp-trigger,
+.fw-tip .mapboxgl-popup-content, .region-card, .map-display__panel, .mtool, .cwin {
+  background: var(--mg-bg) !important; border: 1px solid var(--mg-line) !important; box-shadow: var(--mg-shadow) !important;
+  color: var(--mg-ink) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%) !important; backdrop-filter: blur(20px) saturate(170%) !important;
+}
+.map-display__panel, .mtool, .cwin, .fw-tip .mapboxgl-popup-content, .region-card { background: var(--mg-bg-strong) !important; }
+.map__views, .map-display__toggle, .mapboxgl-ctrl-group, .map-note { border-radius: 12px !important; }
+.map-hint, .mrail, .map-display__panel { border-radius: 16px !important; }
+.mtool, .cwin { border-radius: 18px !important; }
+.fw-tip .mapboxgl-popup-content { border-radius: 12px !important; }
+
+/* ---------- Boutons : transparents, survol turquoise, actif plein ---------- */
+.map__views { padding: 4px !important; gap: 2px; display: inline-flex; }
+.map__views button {
+  height: 32px; padding: 0 12px; border: 1px solid transparent !important; border-radius: 9px !important; background: transparent !important;
+  color: var(--mg-ink-2) !important; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: background 140ms, color 140ms, border-color 140ms;
+}
+.map__views button:hover, .map__views button:focus-visible { background: var(--mg-hover) !important; border-color: var(--mg-hover-line) !important; color: var(--mg-ink) !important; }
+.map-display__toggle { height: 38px !important; padding: 0 14px !important; font-weight: 700 !important; transition: border-color 140ms, box-shadow 140ms; }
+.map-display__toggle svg { color: var(--br-primary-text); }
+.map-display__toggle:hover, .map-display.is-open .map-display__toggle { border-color: var(--mg-hover-line) !important; box-shadow: var(--mg-shadow), 0 0 0 3px rgba(79,191,173,.12) !important; }
+
+/* ---------- Zoom / boussole Mapbox : pictogrammes clairs, séparateurs fins ---------- */
+.mapboxgl-ctrl-group { overflow: hidden; }
+.mapboxgl-ctrl-group button { width: 36px !important; height: 36px !important; background-color: transparent !important; transition: background-color 140ms; }
+.mapboxgl-ctrl-group button + button { border-top: 1px solid var(--mg-tile-line) !important; }
+.mapboxgl-ctrl-group button:hover { background-color: var(--mg-hover) !important; }
+:root:not([data-theme="light"]) .mapboxgl-ctrl-group .mapboxgl-ctrl-icon { filter: invert(1) brightness(1.05) opacity(.85); }
+.mapboxgl-ctrl-scale { background: var(--mg-bg) !important; border-color: var(--br-primary-text) !important; color: var(--mg-ink) !important; border-radius: 0 0 6px 6px; font-weight: 600; }
+:root:not([data-theme="light"]) .mapboxgl-ctrl-attrib { background: rgba(20,32,54,.6) !important; border-radius: 8px 0 0 0; }
+:root:not([data-theme="light"]) .mapboxgl-ctrl-attrib a { color: #B9C6DC !important; }
+
+/* ---------- Panneau Affichage : tuiles de verre ---------- */
+.map-display__label { color: var(--mg-ink-2) !important; letter-spacing: .12em !important; }
+.map-display__opt, .map-display__seg { background: var(--mg-tile) !important; border: 1px solid var(--mg-tile-line) !important; color: var(--mg-ink) !important; }
+.map-display__opt { border-radius: 10px !important; height: 38px !important; transition: border-color 140ms, background 140ms; }
+.map-display__opt:hover { border-color: var(--mg-hover-line) !important; }
+.map-display__opt[aria-pressed="true"], .map-display__seg button[aria-pressed="true"] {
+  background: var(--mg-hover) !important; border-color: var(--mg-hover-line) !important; color: var(--br-primary-text) !important;
+  box-shadow: inset 0 0 0 1px rgba(79,191,173,.25), 0 0 16px rgba(79,191,173,.18) !important;
+}
+.map-display__seg { border-radius: 11px !important; }
+.map-display__seg button { color: var(--mg-ink-2) !important; border-radius: 8px !important; }
+.map-display__switch b { color: var(--mg-ink) !important; }
+.map-display__switch small, .map-display__hint { color: var(--mg-ink-2) !important; }
+
+/* ---------- Note d'état et invitation centrale ---------- */
+.map-note { padding: 9px 12px !important; font-size: 12px; line-height: 1.5; color: var(--mg-ink-2) !important; }
+.map-note b { color: var(--mg-ink); }
+.map-hint { padding: 18px 20px !important; }
+.map-hint b { color: var(--mg-ink); }
+.map-hint span { color: var(--mg-ink-2) !important; }
+.map-hint::before { content: ""; display: block; width: 36px; height: 3px; margin: 0 auto 12px; border-radius: 3px; background: linear-gradient(90deg, #CC79A7, #4FBFAD, #E69F00); }
+
+/* ---------- Barre de coordonnées ---------- */
+.ops-coordinates { color: var(--mg-ink-2) !important; }
+.ops-coordinates span + span { border-left-color: var(--mg-tile-line) !important; }
+
+/* ---------- Rail : boutons de verre, l'actif s'allume ---------- */
+.mrail button { color: var(--mg-ink-2); }
+.mrail button:hover { background: var(--mg-hover); border-color: var(--mg-hover-line); color: var(--mg-ink); }
+.mrail button[aria-pressed="true"] { background: linear-gradient(135deg, rgba(79,191,173,.28), rgba(79,191,173,.10)); color: #FFFFFF; border-color: rgba(79,191,173,.6); }
+[data-theme="light"] .mrail button[aria-pressed="true"] { color: #0B4F62; }
+.mrail button[data-tone="ember"][aria-pressed="true"] { background: linear-gradient(135deg, rgba(255,133,71,.30), rgba(255,133,71,.10)); color: #FFFFFF; border-color: rgba(255,133,71,.6); }
+[data-theme="light"] .mrail button[data-tone="ember"][aria-pressed="true"] { color: #8A3A10; }
+.mrail button::after { background: var(--mg-bg-strong); border-color: var(--mg-line); color: var(--mg-ink); box-shadow: var(--mg-shadow); }
+
+/* ---------- Panneaux d'outil et fenêtre de zone : en-tête de verre + liseré « harmonisation » ---------- */
+.mtool__head, .cwin__head {
+  position: relative; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)) !important;
+  border-bottom: 1px solid var(--mg-tile-line) !important; color: var(--mg-ink) !important;
+}
+.mtool__head::after, .cwin__head::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: -1px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, #CC79A7, #4FBFAD 50%, #E69F00); opacity: .85; }
+.cwin__head h3 { color: var(--mg-ink) !important; }
+.cwin__head p { color: var(--mg-ink-2) !important; }
+.cwin__grip { background-image: radial-gradient(circle, var(--mg-ink-2) 1.2px, transparent 1.4px) !important; }
+.mtool__close, .cwin__close, .cwin__back { background: var(--mg-tile) !important; border: 1px solid var(--mg-tile-line) !important; color: var(--mg-ink-2) !important; transition: background 140ms, color 140ms, border-color 140ms; }
+.mtool__close:hover, .cwin__close:hover, .cwin__back:hover { background: var(--mg-hover) !important; border-color: var(--mg-hover-line) !important; color: var(--mg-ink) !important; }
+.cwin__tabs { border-bottom-color: var(--mg-tile-line) !important; }
+.cwin__tabs button { color: var(--mg-ink-2) !important; }
+.cwin__tabs button[aria-selected="true"] { color: var(--mg-ink) !important; }
+.cwin__periods button { background: var(--mg-tile) !important; border-color: var(--mg-tile-line) !important; color: var(--mg-ink-2) !important; }
+.cwin__periods button:hover { border-color: var(--mg-hover-line) !important; color: var(--mg-ink) !important; }
+.cwin__periods button[aria-pressed="true"] { background: linear-gradient(135deg, #4FBFAD, #3FA696) !important; border-color: transparent !important; color: #0B1F1B !important; box-shadow: 0 4px 14px rgba(79,191,173,.3); }
+.cwin__kpis div { background: var(--mg-tile) !important; border: 1px solid var(--mg-tile-line) !important; }
+.cwin__kpis div.is-hot { background: rgba(255,133,71,.10) !important; border-color: rgba(255,133,71,.35) !important; }
+.zchart, .zt { background: var(--mg-tile) !important; border-color: var(--mg-tile-line) !important; }
+.cwin__foot { border-top-color: var(--mg-tile-line) !important; color: var(--mg-ink-2) !important; }
+
+/* ---------- Tuiles internes des panneaux : un seul gabarit ---------- */
+.mtool .ops-layer, .mtool__link, .mtool__steps li, .mtool .nx-kpi, .mtool .ops-period button, .mtool .ops-period label {
+  background: var(--mg-tile) !important; border: 1px solid var(--mg-tile-line) !important;
+}
+.mtool .ops-layer:hover, .mtool__link:hover, .mtool .ops-period button:hover { border-color: var(--mg-hover-line) !important; background: var(--mg-hover) !important; box-shadow: none; }
+.mtool .ops-period button.is-on { background: linear-gradient(135deg, #4FBFAD, #3FA696) !important; border-color: transparent !important; color: #0B1F1B !important; }
+.mtool .nx-kpi { box-shadow: none; }
+.mtool__body { scrollbar-gutter: stable; }
+
+/* ---------- Bulle de survol ---------- */
+.fw-tip .mapboxgl-popup-content span { color: var(--mg-ink-2) !important; }
+.fw-tip .mapboxgl-popup-content em { color: var(--br-primary-text) !important; }
+
+/* ---------- Onglet Repères : même verre, accroché au bord ---------- */
+.qp-trigger { border-right: 0 !important; border-radius: 12px 0 0 12px !important; }
+.qp-trigger:hover { border-color: var(--mg-hover-line) !important; }
+
+@media (prefers-reduced-transparency: reduce) {
+  .map__views, .map-display__toggle, .mapboxgl-ctrl-group, .map-note, .map-hint, .ops-coordinates, .mrail, .qp-trigger,
+  .fw-tip .mapboxgl-popup-content, .region-card, .map-display__panel, .mtool, .cwin {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--fw-color-bg-surface1) !important;
+  }
+}
+
+
+/* =====================================================================
+   Verre bleu profond pour toute l'application (mode nuit) :
+   en-tête, menu, cartes, indicateurs, Repères, fiche d'observation.
+   ===================================================================== */
+:root:not([data-theme="light"]) {
+  --chrome-top: rgba(32,60,110,.82);
+}
+:root:not([data-theme="light"]) .fw-sidebar {
+  background:
+    radial-gradient(420px 260px at 0% 0%, rgba(110,160,255,.16), transparent 70%),
+    linear-gradient(180deg, rgba(32,60,110,.96) 0%, rgba(26,50,94,.98) 100%) !important;
+  border-right: 1px solid rgba(130,175,255,.16) !important;
+}
+:root:not([data-theme="light"]) .fw-topbar { border-bottom-color: rgba(130,175,255,.16) !important; }
+:root:not([data-theme="light"]) .card, :root:not([data-theme="light"]) .stat, :root:not([data-theme="light"]) .toolbar,
+:root:not([data-theme="light"]) .fold, :root:not([data-theme="light"]) .method__block, :root:not([data-theme="light"]) .evcard,
+:root:not([data-theme="light"]) .nx-kpi {
+  background: linear-gradient(155deg, rgba(120,170,255,.12) 0%, rgba(80,130,230,.03) 40%, rgba(0,0,0,0) 75%), var(--glass-bg-strong) !important;
+  border-color: var(--glass-line) !important;
+  box-shadow: 0 14px 36px rgba(6,16,40,.28), inset 0 1px 0 rgba(170,205,255,.14) !important;
+}
+:root:not([data-theme="light"]) .nx-kpi--hot { background: linear-gradient(180deg, rgba(255,133,71,.16), rgba(255,133,71,0) 70%), var(--glass-bg-strong) !important; border-color: rgba(255,133,71,.38) !important; }
+:root:not([data-theme="light"]) .hero { border-color: rgba(130,175,255,.22) !important; }
+:root:not([data-theme="light"]) .qp, :root:not([data-theme="light"]) .detail-overlay .sheet {
+  background: var(--mg-bg-strong) !important; border-color: var(--mg-line) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
+}
+:root:not([data-theme="light"]) .ops-header { background: rgba(32,60,110,.84) !important; border-bottom-color: rgba(130,175,255,.16) !important; }
+:root:not([data-theme="light"]) thead th, :root:not([data-theme="light"]) .nx-table thead th { background: rgba(110,160,255,.08) !important; }
+
+
+/* =====================================================================
+   Sur la carte, toujours le verre bleu profond — même en mode jour.
+   L'imagerie (Nuit, Satellite) est sombre : des panneaux blancs y feraient
+   des trous de lumière. Les jetons du mode nuit sont donc rétablis pour
+   tout ce qui vit sur la carte (y compris les fenêtres en portail).
+   ===================================================================== */
+[data-theme="light"] :is(.operations-map, .map, .cwin, .fw-tip),
+html[data-theme="light"]:has(.operations-map) .qp-root {
+  color-scheme: dark;
+  --mg-bg: linear-gradient(155deg, rgba(150,195,255,.20) 0%, rgba(80,130,230,.05) 35%, rgba(0,0,0,0) 70%), rgba(34,64,116,.70);
+  --mg-bg-strong: linear-gradient(155deg, rgba(150,195,255,.16) 0%, rgba(80,130,230,.04) 35%, rgba(0,0,0,0) 70%), rgba(30,58,108,.88);
+  --mg-line: rgba(160,200,255,.32);
+  --mg-shadow: 0 18px 44px rgba(6,16,40,.40), 0 2px 8px rgba(6,16,40,.22), inset 0 1px 0 rgba(170,205,255,.18);
+  --mg-ink: #EAF1FF; --mg-ink-2: #CAD7EF;
+  --mg-hover: rgba(79,191,173,.14); --mg-hover-line: rgba(79,191,173,.50);
+  --mg-tile: rgba(110,160,255,.07); --mg-tile-line: rgba(130,175,255,.16);
+  --glass-bg: rgba(36,66,120,.58); --glass-bg-strong: rgba(32,60,110,.80); --glass-line: rgba(130,175,255,.22);
+  --glass-shadow: 0 18px 44px rgba(6,16,40,.34), inset 0 1px 0 rgba(170,205,255,.14);
+  --fw-color-bg-surface1: #244478; --fw-color-bg-surface2: #2A4C84; --fw-color-bg-surface3: #325792;
+  --fw-color-border-subtle: rgba(130,175,255,.10); --fw-color-border-default: rgba(130,175,255,.18); --fw-color-border-strong: rgba(130,175,255,.36);
+  --fw-color-text-primary: #EAF1FF; --fw-color-text-secondary: #D3DDF1; --fw-color-text-muted: #C0CEEA;
+  --fw-color-chart-grid: rgba(150,180,255,.10); --fw-color-chart-axis: #C0CEEA;
+  --br-primary: #4FBFAD; --br-primary-hover: #8ED9CB; --br-primary-pressed: #3FA696; --br-on-primary: #0B1F1B;
+  --br-primary-tint: rgba(79,191,173,.14); --br-primary-text: #8ED9CB; --br-link: #8ED9CB;
+  --br-table-head-bg: rgba(110,160,255,.08); --br-table-head-text: #D3DDF1;
+  --br-focus-ring: 0 0 0 2px #1E3A6A, 0 0 0 4px #4FBFAD;
+  --tone-forest-bg: rgba(79,191,173,.08); --tone-forest-ink: #9ADFD3; --tone-forest-line: rgba(79,191,173,.22);
+  --tone-ember-bg: rgba(255,133,71,.10); --tone-ember-ink: #FFAE6B; --tone-ember-line: rgba(255,133,71,.30);
+  --tone-info-bg: rgba(138,168,255,.09); --tone-info-ink: #AFC3FF; --tone-info-line: rgba(138,168,255,.24);
+  --cal-0: #2A4170; --cal-0-line: #3A5488; --hm-hatch: #4D6286;
+  color: var(--fw-color-text-primary);
+}
+/* Contrôles de base qui gardent un fond blanc en mode jour */
+[data-theme="light"] :is(.operations-map, .cwin) :is(.btn, .input, .select) { background: var(--mg-tile); color: var(--mg-ink); border-color: var(--mg-tile-line); }
+[data-theme="light"] :is(.operations-map, .cwin) :is(.chip, .seg) { background: var(--mg-tile); color: var(--mg-ink-2); border-color: var(--mg-tile-line); }
+[data-theme="light"] :is(.operations-map, .cwin) .chip[aria-pressed="true"] { background: var(--mg-hover); color: var(--br-primary-text); border-color: var(--mg-hover-line); }
+[data-theme="light"] :is(.operations-map, .cwin) :is(td, tbody th) { color: var(--fw-color-text-primary); border-bottom-color: var(--fw-color-border-subtle); }
+[data-theme="light"] :is(.operations-map, .cwin) tbody tr:nth-child(even) td { background: rgba(110,160,255,.04); }
+[data-theme="light"] :is(.operations-map, .cwin) thead th { background: var(--br-table-head-bg) !important; color: var(--br-table-head-text) !important; }
+[data-theme="light"] :is(.operations-map, .map) .mapboxgl-ctrl-group .mapboxgl-ctrl-icon { filter: invert(1) brightness(1.05) opacity(.85); }
+[data-theme="light"] :is(.operations-map, .map) .mapboxgl-ctrl-attrib { background: rgba(32,60,110,.6) !important; }
+[data-theme="light"] :is(.operations-map, .map) .mapboxgl-ctrl-attrib a { color: #CAD7EF !important; }
+[data-theme="light"] .operations-map .mrail button[aria-pressed="true"] { color: #FFFFFF; }
+[data-theme="light"] .operations-map .mrail button[data-tone="ember"][aria-pressed="true"] { color: #FFFFFF; }
+[data-theme="light"] .operations-map .mtool__state.is-ok { color: #5EE6A8; }
+[data-theme="light"] .operations-map .mtool__state.is-warn { color: #FFC861; }
+[data-theme="light"] .operations-map .nx-kpi--hot b { color: #FFAE6B; }
+[data-theme="light"] .operations-map .mtool .ops-period input { color-scheme: dark; }
+html[data-theme="light"]:has(.operations-map) .qp { background: var(--mg-bg-strong) !important; border-color: var(--mg-line) !important; color: var(--mg-ink); }
+html[data-theme="light"]:has(.operations-map) .qp-trigger { background: var(--mg-bg) !important; color: var(--mg-ink) !important; border-color: var(--mg-line) !important; }

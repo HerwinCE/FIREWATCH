@@ -1,0 +1,26 @@
+{
+  "name": "@firewatch-africa/ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FireWatch Africa — bibliothèque de composants React (design system + intégration API)",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "tokens": "node ../scripts/build-tokens.mjs"
+  },
+  "peerDependencies": {
+    "react": "^18.3.0 || ^19.0.0",
+    "react-dom": "^18.3.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.59.0",
+    "maplibre-gl": "^4.7.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,186 @@
+/* =====================================================================
+   Échelle de l'interface et transitions — chargé en dernier.
+   Les tailles suivent la largeur de l'écran : confortables dès 1280 px,
+   plus amples en 1600–1920 px, plafonnées au-delà (jamais miniatures,
+   jamais démesurées). Mêmes polices, seule l'échelle change.
+   ===================================================================== */
+:root {
+  --fw-size-topbar: clamp(56px, 0.9vw + 44px, 66px);
+  --fw-size-sidebar: clamp(248px, 13vw + 82px, 296px);
+  --fw-size-sidebar-collapsed: clamp(68px, 1vw + 56px, 78px);
+  --t-xs: clamp(11.5px, 0.18vw + 9.3px, 13px);
+  --t-sm: clamp(12.5px, 0.2vw + 10px, 14.5px);
+  --t-md: clamp(14px, 0.25vw + 10.8px, 16.5px);
+  --t-lg: clamp(16px, 0.32vw + 12px, 19.5px);
+  --t-xl: clamp(20px, 0.55vw + 13px, 26px);
+  --t-kpi: clamp(25px, 0.9vw + 13.5px, 34px);
+  --c-h: clamp(38px, 0.45vw + 32px, 46px);
+  --c-h-sm: clamp(32px, 0.35vw + 27.5px, 38px);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --ease-io: cubic-bezier(.65,0,.35,1);
+}
+body { font-size: var(--t-md); }
+
+/* ---------- Coque : en-tête et menu ---------- */
+[data-theme] .fw-topbar h1 { font-size: var(--t-xl); }
+[data-theme] .fw-topbar .fw-crumbs { font-size: var(--t-xs); }
+[data-theme] .fw-topbar__menu { width: var(--c-h); height: var(--c-h); }
+.nx-chip { height: var(--c-h-sm); padding: 0 12px; font-size: var(--t-xs); }
+[data-theme] .fw-topbar .fw-fresh { font-size: var(--t-xs); }
+[data-theme] .fw-logo__name { font-size: clamp(15px, 0.3vw + 11px, 18px); }
+[data-theme] .fw-logo__sub { font-size: var(--t-xs); }
+[data-theme] .fw-nav__label { font-size: clamp(10.5px, 0.15vw + 8.6px, 12px); }
+[data-theme] .fw-nav__item { font-size: var(--t-md); padding: clamp(10px, 0.25vw + 6.8px, 13px) 12px; }
+[data-theme] .fw-nav__item svg { width: clamp(18px, 0.25vw + 14.8px, 21px); height: clamp(18px, 0.25vw + 14.8px, 21px); }
+[data-theme] .fw-sidebar__foot { font-size: var(--t-xs); }
+
+/* ---------- Page ---------- */
+[data-theme] .fw-page { padding: clamp(16px, 1.4vw, 32px) clamp(16px, 1.8vw, 40px) clamp(22px, 2vw, 40px); max-width: 1920px; }
+.nx-dash { gap: clamp(16px, 1.1vw + 2px, 26px); }
+.nx-grid { gap: clamp(16px, 1.1vw + 2px, 26px); }
+.nx-kpis { gap: clamp(10px, 0.5vw + 4px, 16px); grid-template-columns: repeat(auto-fit, minmax(clamp(160px, 9vw + 45px, 220px), 1fr)); }
+
+/* ---------- Titres, cartes, indicateurs ---------- */
+[data-theme] .card__title { font-size: var(--t-lg); }
+[data-theme] .card > .card__head .muted, [data-theme] .card__sub { font-size: var(--t-sm); }
+[data-theme] .card > .card__head > div { padding: clamp(14px, 0.5vw + 8px, 20px) 20px clamp(12px, 0.4vw + 7px, 16px) 38px; }
+[data-theme] .card > .card__head > div::before { top: clamp(21px, 0.6vw + 13px, 28px); left: 20px; }
+[data-theme] .card__body { padding: clamp(14px, 0.5vw + 8px, 22px) 20px clamp(16px, 0.6vw + 9px, 24px); }
+.nx-section__title { font-size: var(--t-sm); }
+.nx-section__hint { font-size: var(--t-sm); }
+.nx-kpi { padding: clamp(14px, 0.5vw + 8px, 20px) clamp(16px, 0.5vw + 10px, 22px); }
+.nx-kpi span { font-size: var(--t-xs); }
+.nx-kpi b { font-size: var(--t-kpi); margin-top: 8px; }
+.nx-kpi b small { font-size: var(--t-sm); }
+.nx-kpi p { font-size: var(--t-sm); margin-top: 8px; }
+.nx-grid > .s6 .nx-kpi b { font-size: clamp(23px, 0.7vw + 13px, 30px); }
+[data-theme] .hero { padding: clamp(24px, 1.8vw + 2px, 44px) clamp(26px, 2vw + 2px, 48px) !important; }
+[data-theme] .hero h2 { font-size: clamp(30px, 2.2vw + 4px, 50px); }
+[data-theme] .hero p { font-size: clamp(15.5px, 0.35vw + 11px, 19px); }
+.nx-meta { font-size: var(--t-sm); gap: 8px 16px; }
+.nx-chart .recharts-text { font-size: var(--t-xs); }
+.nx-chart__cap { font-size: var(--t-xs); }
+
+/* ---------- Contrôles ---------- */
+[data-theme] .btn { height: var(--c-h); padding: 0 clamp(16px, 0.6vw + 8px, 22px); font-size: var(--t-sm); }
+[data-theme] .btn--sm { height: var(--c-h-sm); font-size: var(--t-sm); }
+[data-theme] .input, [data-theme] .select { height: var(--c-h); font-size: var(--t-sm); }
+[data-theme] .toolbar label { font-size: var(--t-sm); }
+[data-theme] .seg button { min-height: calc(var(--c-h-sm) - 6px); font-size: var(--t-sm); padding: 0 12px; }
+[data-theme] .chip { height: var(--c-h-sm); font-size: var(--t-sm); padding: 0 14px; }
+[data-theme] .badge { font-size: var(--t-xs); }
+[data-theme] .fold__title { font-size: var(--t-md); }
+
+/* ---------- Tableaux ---------- */
+.nx-table, [data-theme] table { font-size: var(--t-sm); }
+.nx-table th, .nx-table td, [data-theme] th, [data-theme] td { padding: clamp(8px, 0.3vw + 4px, 12px) clamp(10px, 0.3vw + 6px, 14px); }
+[data-theme] th { font-size: var(--t-xs); }
+
+/* ---------- Carte : commandes, rail, panneaux, fenêtre, chronologie ---------- */
+.map__views button { height: var(--c-h-sm) !important; padding: 0 14px !important; font-size: var(--t-sm) !important; }
+.map-display__toggle { height: var(--c-h) !important; font-size: var(--t-sm) !important; }
+.map-display__panel { width: clamp(272px, 9vw + 160px, 340px) !important; }
+.map-display__opt { height: calc(var(--c-h) - 2px) !important; font-size: var(--t-sm) !important; }
+.map-display__label { font-size: var(--t-xs) !important; }
+.map-display__switch b { font-size: var(--t-sm) !important; } .map-display__switch small, .map-display__hint { font-size: var(--t-xs) !important; }
+.map-note { font-size: var(--t-xs) !important; }
+.map-hint { width: min(420px, calc(100% - 32px)); padding: clamp(18px, 0.6vw + 10px, 26px) clamp(20px, 0.8vw + 10px, 30px) !important; }
+.map-hint b { font-size: clamp(18px, 0.4vw + 13px, 23px); }
+.map-hint span { font-size: var(--t-sm); }
+.mapboxgl-ctrl-group button { width: clamp(36px, 0.4vw + 31px, 42px) !important; height: clamp(36px, 0.4vw + 31px, 42px) !important; }
+
+.mrail { gap: 6px; padding: 7px; }
+.mrail button { width: clamp(44px, 0.6vw + 36px, 54px); height: clamp(44px, 0.6vw + 36px, 54px); border-radius: 14px; }
+.mrail button svg { width: clamp(20px, 0.25vw + 17px, 24px); height: clamp(20px, 0.25vw + 17px, 24px); }
+.mrail button::after { font-size: var(--t-sm); padding: 7px 11px; }
+.mtool { width: min(clamp(400px, 12vw + 250px, 520px), calc(100% - 110px)); }
+.operations-map .mtool { right: clamp(122px, 0.6vw + 112px, 132px); }
+.mtool__icon { width: clamp(34px, 0.4vw + 29px, 40px); height: clamp(34px, 0.4vw + 29px, 40px); }
+.mtool__kind { font-size: clamp(10px, 0.12vw + 8.5px, 11.5px); }
+.mtool__title { font-size: clamp(17px, 0.4vw + 12px, 22px); }
+.mtool__body { gap: clamp(14px, 0.5vw + 8px, 20px); padding: clamp(14px, 0.5vw + 8px, 20px) clamp(16px, 0.5vw + 10px, 22px); }
+.mtool__body p, .mtool__steps li { font-size: var(--t-sm); }
+.mtool__label { font-size: var(--t-xs); }
+.mtool__link { font-size: var(--t-sm); padding: 12px 14px; }
+.mtool .ops-layer b { font-size: var(--t-sm); } .mtool .ops-layer small { font-size: var(--t-xs); }
+.mtool .ops-period button, .mtool .ops-period label { height: var(--c-h-sm); font-size: var(--t-sm); }
+.ops-header { height: clamp(52px, 0.6vw + 44px, 60px) !important; }
+.ops-brand b { font-size: clamp(16px, 0.3vw + 12px, 19px); }
+.ops-brand small, .ops-live { font-size: var(--t-xs); }
+.ops-header__actions button, .ops-header__actions a { height: var(--c-h-sm); font-size: var(--t-sm); }
+.ops-coordinates { top: clamp(52px, 0.6vw + 44px, 60px) !important; font-size: var(--t-xs) !important; }
+
+.cwin { width: min(calc(100vw - 24px), clamp(660px, 40vw, 780px)) !important; height: min(clamp(500px, 58vh, 640px), calc(100vh - 76px)) !important; }
+.cwin__head h3 { font-size: clamp(18px, 0.45vw + 12px, 24px) !important; }
+.cwin__head p { font-size: var(--t-sm) !important; }
+.cwin__kind { font-size: clamp(10px, 0.12vw + 8.5px, 11.5px) !important; }
+.cwin__periods button { height: var(--c-h-sm) !important; padding: 0 14px !important; font-size: var(--t-sm) !important; }
+.cwin__kpis span { font-size: var(--t-xs) !important; }
+.cwin__kpis b { font-size: clamp(19px, 0.6vw + 11px, 26px) !important; }
+.cwin__peak, .cwin__note, .cwin__foot { font-size: var(--t-xs) !important; }
+.cwin__tabs button { height: var(--c-h-sm) !important; font-size: var(--t-sm) !important; padding: 0 12px !important; }
+.zt th, .zt td { font-size: var(--t-sm) !important; }
+.zchart__bars { height: clamp(160px, 18vh, 230px) !important; }
+.zt { max-height: clamp(210px, 24vh, 300px) !important; }
+
+.tdock { width: min(clamp(880px, 30vw + 450px, 1080px), calc(100% - 300px)); }
+.tdock__tab { height: var(--c-h); font-size: var(--t-sm); padding: 0 16px 0 14px; }
+.tdock__field > span { font-size: var(--t-xs); }
+.tdock__seg button { height: calc(var(--c-h-sm) - 6px); font-size: var(--t-xs); padding: 0 11px; }
+.tdock__transport button { width: var(--c-h-sm); height: var(--c-h-sm); }
+.tdock__play { width: calc(var(--c-h) + 4px) !important; height: calc(var(--c-h) + 4px) !important; }
+.tdock__bars { height: clamp(84px, 9vh, 124px); }
+.tdock__foot, .tdock__note { font-size: var(--t-xs); }
+.operations-map:has(.tdock.is-open) .mtool, .operations-map:has(.tdock.is-open) .map-display { bottom: clamp(262px, 9vh + 190px, 320px); }
+
+.ai-md, .ai__msg.is-user p, .ai__form textarea { font-size: var(--t-md); }
+.ai__chips button, .ai__mode, .ai__clear, .ai__actions button { font-size: var(--t-sm); }
+.ai__meta, .ai__foot { font-size: var(--t-xs); }
+.ai__empty b { font-size: clamp(17px, 0.4vw + 12px, 22px); }
+.ai__empty p { font-size: var(--t-sm); }
+.ai__form button { width: var(--c-h); height: var(--c-h); }
+.ai__facts dd { font-size: clamp(17px, 0.4vw + 12px, 22px); }
+
+/* =====================================================================
+   Transitions : entrée des pages et des panneaux, réponses au survol
+   ===================================================================== */
+@keyframes nx-rise { from { opacity: .001; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes nx-swap { from { opacity: .001; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes nx-pop { 0% { transform: scale(.94); } 60% { transform: scale(1.04); } 100% { transform: none; } }
+/* La fenêtre de zone reste lisible même si l'animation est suspendue (onglet en arrière-plan). */
+@keyframes nx-cwin { from { opacity: .55; transform: translateX(-28px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* Changement de page : le contenu monte et apparaît, les blocs arrivent en cascade. */
+.fw-page { animation: nx-swap 360ms var(--ease-out) both; }
+.nx-dash > * { animation: nx-rise 560ms var(--ease-out) both; }
+.nx-dash > :nth-child(2) { animation-delay: 60ms; } .nx-dash > :nth-child(3) { animation-delay: 120ms; }
+.nx-dash > :nth-child(4) { animation-delay: 180ms; } .nx-dash > :nth-child(5) { animation-delay: 240ms; } .nx-dash > :nth-child(n+6) { animation-delay: 300ms; }
+.nx-kpis > * { animation: nx-rise 520ms var(--ease-out) both; }
+.nx-kpis > :nth-child(2) { animation-delay: 70ms; } .nx-kpis > :nth-child(3) { animation-delay: 140ms; } .nx-kpis > :nth-child(4) { animation-delay: 210ms; }
+
+/* Panneaux : changement d'outil en fondu, fenêtre de zone glissée depuis la gauche. */
+.mtool__body { animation: nx-swap 280ms var(--ease-out) both; }
+.cwin { animation: nx-cwin 460ms var(--ease-out) both !important; }
+.cwin__body > * { animation: nx-swap 260ms var(--ease-out) both; }
+.tdock__body { animation: nx-rise 320ms var(--ease-out) both; }
+.map-display__panel { animation: nx-rise 240ms var(--ease-out) both !important; }
+
+/* Retours au survol et à l'appui : léger, rapide, jamais gênant. */
+.nx-kpi, [data-theme] .card { transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), border-color 220ms; }
+.nx-kpi:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(4,10,24,.30) !important; }
+[data-theme] .btn, .mrail button, .map__views button, .tdock__transport button, .cwin__periods button, .ai__chips button, .mtool__link, .map-display__opt {
+  transition: transform 160ms var(--ease-out), background 160ms, border-color 160ms, color 160ms, box-shadow 160ms !important; }
+[data-theme] .btn:active, .mrail button:active, .map__views button:active, .tdock__transport button:active, .cwin__periods button:active, .ai__chips button:active, .map-display__opt:active { transform: scale(.96); }
+.mrail button:hover { transform: translateX(-2px); }
+.mrail button[aria-pressed="true"] svg, .tdock__play svg { animation: nx-pop 380ms var(--ease-out); }
+.mtool__link:hover { transform: translateX(3px); }
+[data-theme] .fw-nav__item { transition: background 200ms, color 200ms, border-color 200ms, transform 200ms var(--ease-out); }
+[data-theme] .fw-nav__item:hover { transform: translateX(3px); }
+.ai__msg { animation: nx-swap 300ms var(--ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-page, .nx-dash > *, .nx-kpis > *, .mtool__body, .cwin, .cwin__body > *, .tdock__body, .map-display__panel, .ai__msg,
+  .mrail button[aria-pressed="true"] svg, .tdock__play svg { animation: none !important; }
+  .nx-kpi:hover, .mrail button:hover, .mtool__link:hover, [data-theme] .fw-nav__item:hover { transform: none; }
+}
+:root[data-reduce-motion="true"] :is(.fw-page, .nx-dash > *, .nx-kpis > *, .mtool__body, .cwin, .cwin__body > *, .tdock__body, .map-display__panel, .ai__msg) { animation: none !important; }

@@ -1,0 +1,64 @@
+/* =====================================================================
+   Mobile et finitions — chargé en dernier.
+   Aucun débordement horizontal, cibles tactiles ≥ 44 px, textes ≥ 12 px.
+   ===================================================================== */
+
+/* ---------- Textes jamais plus petits que 12 px ---------- */
+.firecal__month, .firecal__year { font-size: 12px !important; }
+.mapboxgl-ctrl-scale { font-size: 12px !important; line-height: 1.3; padding: 1px 6px !important; }
+
+/* ---------- Page « Assistant IA » : un seul assistant, des demandes prêtes à l'emploi ---------- */
+.ai-hub { display: grid; gap: 14px; }
+.ai-hub p { margin: 0; max-width: 72ch; font-size: var(--t-sm, 14px); line-height: 1.6; color: var(--fw-color-text-secondary); }
+.ai-hub__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.ai-hub__ask { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 14px; border-radius: 12px; cursor: pointer; text-align: left; font: inherit;
+  font-size: var(--t-sm, 14px); font-weight: 650; color: var(--fw-color-text-primary); background: color-mix(in srgb, var(--fw-color-text-primary) 4%, transparent); border: 1px solid var(--fw-color-border-default); }
+.ai-hub__ask svg { flex-shrink: 0; color: var(--br-primary-text); }
+.ai-hub__ask:hover { border-color: color-mix(in srgb, var(--br-primary) 55%, transparent); background: var(--br-primary-tint); }
+
+/* ---------- Mobile (≤ 767 px) ---------- */
+@media (max-width: 767px) {
+  /* Choix MODIS / VIIRS : pleine largeur, deux boutons égaux, sans sous-titre. */
+  .toolbar .sensor-toggle, .mtool .sensor-toggle { display: flex; flex: 1 1 100%; width: 100%; margin-right: 0; }
+  .toolbar .sensor-toggle__btn, .mtool .sensor-toggle__btn { flex: 1 1 0; min-width: 0; justify-content: center; }
+  .ops-header .sensor-toggle { display: none !important; }        /* sur la carte, le choix est dans le panneau « Couches » */
+  /* Calendrier de feu : défilement horizontal dans son cadre plutôt qu'un débordement de la page. */
+  .firecal { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .firecal__grid { min-width: 520px; }
+  .table-wrap { overflow-x: auto; }
+  .sensor-toggle__txt small, .sensor-toggle__state { display: none !important; }
+  .toolbar { flex-wrap: wrap; }
+  .toolbar > label { flex: 1 1 140px; min-width: 0; }
+  .toolbar > label .input { width: 100%; }
+
+  /* En-tête de la carte : seulement l'essentiel, le reste est dans le menu et le rail. */
+  .ops-header__actions > a, .ops-header__actions > button:not(.harmo-btn button) { display: none !important; }
+  .ops-header .harmo-btn__txt { display: none; }
+  .ops-header .harmo-btn > button { width: 40px; padding: 0 !important; justify-content: center; }
+  .ops-alert { padding: 0 10px !important; }
+  .ops-brand > span small { display: none; }
+
+  /* Bulle de l'assistant : au-dessus de la barre de navigation du bas, jamais dessus. */
+  .fw-app:not([data-route="carte"]) .va { right: 14px !important; bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
+  .va__orb { width: 54px; height: 54px; }
+  .va__panel { width: calc(100vw - 28px); }
+
+  /* Barre de navigation du bas : chaque entrée occupe toute sa colonne. */
+  .bnav a, .bnav button { min-width: 0; min-height: 56px; width: 100%; font-size: 12px !important; }
+}
+
+/* ---------- Écrans tactiles : cibles d'au moins 44 px ---------- */
+@media (pointer: coarse), (max-width: 767px) {
+  [data-theme] .seg button, .tdock__seg button, .map-display__seg button { min-height: 44px; }
+  [data-theme] .btn, [data-theme] .btn--sm, [data-theme] .fw-topbar__menu, .fold__toggle, .fold__action,
+  [data-theme] .chip, .map__views button, .cwin__periods button, .anomaly__link, .mtool__close, .cwin__close { min-height: 44px; }
+  .mtool__close, .cwin__close { min-width: 44px; }
+  .mrail button { width: 48px; height: 48px; }
+  .sensor-toggle__btn { min-height: 44px; }
+}
+
+/* Téléphone : une seule colonne, même quand le menu de bureau est « replié »
+   (la règle .sidebar-collapsed, plus précise, imposait une colonne de 68 px au contenu). */
+@container app (max-width: 767px) {
+  .fw-app.sidebar-collapsed, .fw-app { grid-template-columns: minmax(0, 1fr) !important; }
+}

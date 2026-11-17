@@ -1,0 +1,26 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+backend/.venv/
+backend/.coverage
+backend/htmlcov/
+backend/data/
+*.log
+node_modules/
+dist/
+
+
+# Données FIRMS brutes (téléchargées par telecharger-archives.ps1 et les scripts d'ingestion)
+data/raw/
+# Outils et réglages locaux
+.claude/
+.vscode/
+# Documents personnels et copies de pages tierces (non nécessaires à l'application)
+cahier_des_charges.docx
+cahier_des_charges.pdf
+discours-jury.md
+FireWatch Africa — Carte des feux actifs.html

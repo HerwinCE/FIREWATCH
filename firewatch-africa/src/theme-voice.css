@@ -1,0 +1,124 @@
+/* =====================================================================
+   Assistant vocal — orbe flottant + panneau en verre.
+   Un état = une couleur et un mouvement :
+   attente (turquoise calme) · écoute (turquoise, ondes) · analyse (ambre, rotation)
+   · exécution (ambre, pulsation) · confirmation (orange) · réponse (bleu doux, ondes) · erreur (rouge).
+   ===================================================================== */
+.va { position: fixed; right: clamp(16px, 1.4vw, 28px); bottom: clamp(16px, 1.6vh, 26px); z-index: 55; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: none; }
+.va > * { pointer-events: auto; }
+.va { --va: #4FBFAD; }
+.va.is-listening { --va: #4FBFAD; } .va.is-thinking, .va.is-acting { --va: #E9B44C; } .va.is-confirm { --va: #FF9F1C; }
+.va.is-speaking { --va: #9BB8E0; } .va.is-error { --va: #F27A6E; }
+/* Sur la carte, l'orbe se place à gauche de la chronologie pour ne rien masquer. */
+.fw-app[data-route="carte"] .va { bottom: 84px; right: 96px; }
+
+/* ---------- Orbe ---------- */
+.va__orb {
+  position: relative; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; border: 0;
+  color: #0B1F1B; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--va) 70%, #FFFFFF), var(--va) 55%, color-mix(in srgb, var(--va) 70%, #000) 100%);
+  box-shadow: 0 10px 30px rgba(0,0,0,.40), 0 0 0 1px rgba(255,255,255,.12) inset, 0 0 26px color-mix(in srgb, var(--va) 40%, transparent);
+  transition: transform 200ms cubic-bezier(.16,1,.3,1), box-shadow 200ms, background 300ms;
+}
+.va__orb:hover { transform: scale(1.06); }
+.va__orb:active { transform: scale(.96); }
+.va__orb svg { position: relative; z-index: 1; }
+.va__ring { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--va) 55%, transparent); opacity: 0; pointer-events: none; }
+.va.is-listening .va__ring, .va.is-speaking .va__ring { animation: va-wave 1.6s ease-out infinite; }
+.va.is-listening .va__ring.is-2, .va.is-speaking .va__ring.is-2 { animation-delay: .8s; }
+@keyframes va-wave { 0% { transform: scale(.9); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+.va.is-thinking .va__ring { opacity: 1; border-color: transparent; border-top-color: var(--va); border-right-color: color-mix(in srgb, var(--va) 40%, transparent); animation: va-spin .9s linear infinite; }
+@keyframes va-spin { to { transform: rotate(360deg); } }
+.va.is-acting .va__orb { animation: va-beat .9s ease-in-out infinite; }
+@keyframes va-beat { 50% { box-shadow: 0 10px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.12) inset, 0 0 44px color-mix(in srgb, var(--va) 65%, transparent); } }
+.va.is-error .va__orb { animation: va-shake 420ms ease 1; }
+@keyframes va-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.va__tag { position: absolute; right: calc(100% + 10px); white-space: nowrap; padding: 6px 11px; border-radius: 9px; font-size: var(--t-xs, 12px); font-weight: 700;
+  color: var(--fw-color-text-primary); background: var(--mg-bg-strong, rgba(24,27,32,.93)); border: 1px solid var(--mg-line, rgba(255,255,255,.13)); opacity: 0; transform: translateX(4px); transition: opacity 160ms, transform 160ms; pointer-events: none; }
+.va__orb:hover .va__tag, .va__orb:focus-visible .va__tag { opacity: 1; transform: none; }
+
+/* ---------- Panneau ---------- */
+.va__panel {
+  width: min(400px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 140px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 18px;
+  color: #ECEEF1; background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,0) 40%), rgba(24,27,32,.93);
+  border: 1px solid rgba(255,255,255,.12); box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+  animation: va-in 260ms cubic-bezier(.16,1,.3,1) both;
+  --fw-color-text-primary: #ECEEF1; --fw-color-text-secondary: #C3C8D0; --fw-color-text-muted: #9AA2AE;
+}
+@keyframes va-in { from { transform: translateY(10px) scale(.98); opacity: .5; } to { transform: none; opacity: 1; } }
+.va__head { display: flex; align-items: center; gap: 10px; padding: 12px 10px 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); position: relative; }
+.va__head::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, #CC79A7, var(--va), #E69F00); opacity: .8; transition: background 300ms; }
+.va__orb-mini { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: #0B1F1B; background: var(--va); transition: background 300ms; }
+.va__head > div { flex: 1; display: grid; line-height: 1.25; }
+.va__head b { font-family: var(--fw-font-display); font-size: var(--t-md, 15px); }
+.va__head span { font-size: var(--t-xs, 12px); color: var(--va); font-weight: 700; transition: color 300ms; }
+.va__head button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; cursor: pointer; color: #C3C8D0; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10); }
+.va__head button:hover, .va__head button[aria-pressed="true"] { color: #FFFFFF; border-color: rgba(79,191,173,.45); background: rgba(79,191,173,.12); }
+
+.va__settings { display: grid; gap: 8px; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); font-size: var(--t-xs, 12px); }
+.va__settings label { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 8px; color: #C3C8D0; font-weight: 650; }
+.va__settings select { height: 32px; border-radius: 8px; padding: 0 8px; font: inherit; color: #ECEEF1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); }
+.va__settings input[type="range"] { accent-color: #4FBFAD; }
+.va__settings .va__mute { display: flex; gap: 8px; grid-template-columns: none; }
+.va__settings button { justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 700; color: #8ED9CB; background: rgba(79,191,173,.10); border: 1px solid rgba(79,191,173,.30); }
+
+.va__log { flex: 1; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.va__hello b { display: block; font-family: var(--fw-font-display); font-size: var(--t-md, 15px); margin-bottom: 4px; }
+.va__hello p { margin: 0 0 8px; font-size: var(--t-sm, 13px); line-height: 1.55; color: #C3C8D0; }
+.va__keys { font-size: var(--t-xs, 12px) !important; color: #9AA2AE !important; }
+kbd { padding: 1px 6px; border-radius: 5px; font: 600 11px/1.6 var(--fw-font-family-sans); color: #ECEEF1; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); }
+.va__user { align-self: flex-end; max-width: 85%; margin: 0; padding: 8px 12px; border-radius: 14px 14px 4px 14px; font-size: var(--t-sm, 13.5px); line-height: 1.5; font-weight: 600;
+  color: #0B1F1B; background: linear-gradient(135deg, #4FBFAD, #47B3A2); animation: nx-swap 240ms ease both; }
+.va__user.is-interim { opacity: .65; font-style: italic; background: rgba(79,191,173,.25); color: #ECEEF1; }
+.va__bot { align-self: flex-start; max-width: 94%; display: grid; gap: 7px; padding: 10px 12px; border-radius: 4px 14px 14px 14px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); animation: nx-swap 240ms ease both; }
+.va__bot:empty { display: none; }
+.va__bot p { margin: 0; font-size: var(--t-sm, 13.5px); line-height: 1.55; }
+.va__bot.is-error { border-color: rgba(242,122,110,.45); background: rgba(242,122,110,.08); }
+.va__engine { justify-self: start; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9AA2AE; }
+.va__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.va__steps li { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 2px 8px; padding: 6px 8px; border-radius: 9px; font-size: var(--t-xs, 12.5px); background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); }
+.va__steps li > svg { margin-top: 2px; }
+.va__steps li span { font-weight: 700; color: #ECEEF1; }
+.va__steps li small { grid-column: 2; color: #C3C8D0; font-size: 11.5px; line-height: 1.4; }
+.va__steps li.is-ok > svg { color: #6FD39C; } .va__steps li.is-ko > svg { color: #F27A6E; } .va__steps li.is-run > svg { color: #E9B44C; animation: va-spin 1s linear infinite; }
+.va__steps li.is-ko { border-color: rgba(242,122,110,.30); }
+
+.va__confirm { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; margin: 0 12px 10px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(255,159,28,.10); border: 1px solid rgba(255,159,28,.45); animation: nx-swap 220ms ease both; }
+.va__confirm > svg { color: #FF9F1C; }
+.va__confirm div { display: grid; } .va__confirm b { font-size: var(--t-sm, 13px); } .va__confirm span { font-size: var(--t-xs, 12px); color: #C3C8D0; }
+.va__confirm button { grid-row: 2; height: 32px; border-radius: 9px; cursor: pointer; font: inherit; font-size: var(--t-xs, 12px); font-weight: 800; color: #ECEEF1; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); }
+.va__confirm button.is-yes { grid-column: 1 / 2; display: inline-flex; align-items: center; gap: 5px; padding: 0 12px; color: #1A1000; background: #FF9F1C; border-color: transparent; }
+.va__confirm button:not(.is-yes) { grid-column: 2; justify-self: start; padding: 0 12px; }
+
+.va__form { display: flex; gap: 6px; padding: 10px 12px 12px; border-top: 1px solid rgba(255,255,255,.08); }
+.va__form input { flex: 1; height: 38px; border-radius: 10px; padding: 0 12px; font: inherit; font-size: var(--t-sm, 13.5px); color: #ECEEF1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); }
+.va__form input:focus { outline: none; border-color: #4FBFAD; box-shadow: 0 0 0 3px rgba(79,191,173,.18); }
+.va__form button { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; border: 0; color: #0B1F1B; background: #4FBFAD; }
+.va__form button:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (max-width: 640px) { .fw-app[data-route="carte"] .va { right: 16px; bottom: 120px; } .va__panel { max-height: 60vh; } }
+@media (prefers-reduced-motion: reduce) {
+  .va__ring, .va__orb, .va__steps li.is-run > svg, .va__panel, .va__user, .va__bot, .va__confirm { animation: none !important; }
+}
+
+/* Hors carte, l'onglet « Repères » occupe le bord droit : l'assistant se place à sa gauche. */
+@media (min-width: 768px) { .fw-app:not([data-route="carte"]) .va { right: 64px; } }
+
+/* Niveau du micro en direct : l'utilisateur voit qu'il est entendu. */
+.va__level { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: color-mix(in srgb, var(--va) 35%, transparent);
+  transform: scale(calc(1 + var(--lvl, 0) * .55)); opacity: calc(var(--lvl, 0) * 1.4); transition: transform 90ms linear, opacity 90ms linear; }
+.va.is-transcribing { --va: #E9B44C; }
+.va.is-transcribing .va__ring { opacity: 1; border-color: transparent; border-top-color: var(--va); animation: va-spin .9s linear infinite; }
+.va__meter { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 4px; }
+.va__meter i { width: 3px; height: 100%; border-radius: 2px; background: var(--va); transform-origin: center; transition: transform 90ms linear; }
+.va__settings select:disabled { opacity: .5; }
+
+/* Test du micro : jauge en direct et verdict lisible */
+.va__test { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); }
+.va__test button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 700; color: #0B1F1B; background: #4FBFAD; border: 0; }
+.va__test button:disabled { background: #E9B44C; cursor: progress; }
+.va__testbar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.va__testbar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #4FBFAD, #E9B44C 70%, #F27A6E); transition: width 60ms linear; }
+.va__test small { grid-column: 1 / -1; font-size: 12px; line-height: 1.45; }
+.va__test small.is-ok { color: #6FD39C; } .va__test small.is-ko { color: #F27A6E; }
