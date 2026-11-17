@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent as RKeyboardEvent} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {FireMap} from './MapView';
 import {get} from './api';
@@ -45,6 +45,17 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
  // Rail : icônes seules par défaut, noms des outils sur demande (choix mémorisé sur cet appareil).
  const [wide,setWide]=useState(()=>{try{return localStorage.getItem('fw.rail.wide')==='1'}catch{return false}});
  const toggleWide=()=>setWide(v=>{try{localStorage.setItem('fw.rail.wide',v?'0':'1')}catch{/* rien */}return !v;});
+ // Dock : un seul repère lumineux glisse jusqu'à l'outil ouvert (au lieu de s'allumer sur place).
+ const railRef=useRef<HTMLElement>(null);
+ const [glow,setGlow]=useState<{x:number;y:number;w:number;h:number;ember:boolean}|null>(null);
+ useLayoutEffect(()=>{const nav=railRef.current;if(!nav)return;
+  const place=()=>{const b=tool?nav.querySelector<HTMLElement>(`button[data-tool="${tool}"]`):null;
+   setGlow(g=>b?{x:b.offsetLeft,y:b.offsetTop,w:b.offsetWidth,h:b.offsetHeight,ember:b.dataset.tone==='ember'}:g&&{...g,w:0});};
+  place();const ro=new ResizeObserver(place);ro.observe(nav);return()=>ro.disconnect();},[tool,wide]);
+ // Clavier : flèches haut/bas (gauche/droite sur mobile), Début et Fin parcourent les outils.
+ const railKeys=(e:RKeyboardEvent<HTMLElement>)=>{const keys=['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'];if(!keys.includes(e.key))return;
+  const list=[...(railRef.current?.querySelectorAll<HTMLButtonElement>('button')??[])];const i=list.indexOf(document.activeElement as HTMLButtonElement);if(i<0)return;e.preventDefault();
+  const n=e.key==='Home'?0:e.key==='End'?list.length-1:(i+(e.key==='ArrowDown'||e.key==='ArrowRight'?1:-1)+list.length)%list.length;list[n].focus();};
  useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!document.querySelector('.cwin,.detail-overlay'))setTool(null)};addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[]);
  const current=TOOLS.find(t=>t.id===tool);
  // --- Alertes : détection automatique, zoom intelligent sur toute nouvelle alerte élevée ou critique ---
@@ -99,7 +110,8 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
   </header>
   <div className="ops-coordinates"><span>Vue : {view}</span><span>{start||end?`${start||'…'} → ${end||latest}`:'Toute la période chargée'}</span><span>{sensor||'MODIS + VIIRS'} · UTC</span></div>
 
-  <nav className={`mrail${wide?' is-wide':''}`} aria-label="Outils de la carte">
+  <nav ref={railRef} className={`mrail${wide?' is-wide':''}`} aria-label="Outils de la carte" onKeyDown={railKeys}>
+   <span className={`mrail__glow${glow?.ember?' is-ember':''}`} aria-hidden="true" style={glow?{transform:`translate(${glow.x}px,${glow.y}px)`,width:glow.w,height:glow.h,opacity:glow.w?1:0}:{opacity:0}}/>
    {TOOLS.slice(0,1).map(t=><RailBtn key={t.id} t={t} on={tool===t.id} onClick={()=>toggle(t.id)}/>)}
    <button type="button" data-label="Chronologie" aria-label="Chronologie" aria-pressed={timelineOpen} onClick={()=>setTimelineOpen(v=>!v)}><Icon name="activity" size={20}/><span className="mrail__lbl">Chronologie</span></button>
    <span className="mrail__sep" aria-hidden="true"/>
@@ -135,7 +147,7 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
  </section>;
 }
 
-function RailBtn({t,on,onClick,badge}:{t:typeof TOOLS[number];on:boolean;onClick:()=>void;badge?:{n:number;level:string|null}}){return <button type="button" data-label={t.label} data-tone={t.ember?'ember':undefined} aria-label={badge?`${t.label} (${badge.n})`:t.label} aria-pressed={on} onClick={onClick}><Icon name={t.icon} size={20}/><span className="mrail__lbl">{t.label}</span>{badge&&<span className={`mrail__badge is-${badge.level}`}>{badge.n>99?'99+':badge.n}</span>}</button>}
+function RailBtn({t,on,onClick,badge}:{t:typeof TOOLS[number];on:boolean;onClick:()=>void;badge?:{n:number;level:string|null}}){return <button type="button" data-tool={t.id} data-label={t.label} data-tone={t.ember?'ember':undefined} aria-label={badge?`${t.label} (${badge.n})`:t.label} aria-pressed={on} onClick={onClick}><Icon name={t.icon} size={20}/><span className="mrail__lbl">{t.label}</span>{badge&&<span className={`mrail__badge is-${badge.level}`}>{badge.n>99?'99+':badge.n}</span>}</button>}
 function Group({label,children}:{label:string;children:ReactNode}){return <section className="mtool__group"><h3 className="mtool__label">{label}</h3>{children}</section>}
 function Layer({enabled,color,square,label,sub,onClick}:{enabled:boolean;color:string;square?:boolean;label:string;sub:string;onClick:()=>void}){return <button className={`ops-layer${enabled?'':' is-off'}`} onClick={onClick} aria-pressed={enabled}><i className={square?'square':''} style={{background:color,color}}/><span><b>{label}</b><small>{sub}</small></span><em>{enabled?<Icon name="eye" size={16}/>:null}</em></button>}
 function Kpi({label,value,unit,foot,tone,icon}:{label:string;value:ReactNode;unit?:string;foot?:ReactNode;tone?:string;icon?:string}){return <div className={`nx-kpi${tone?' nx-kpi--'+tone:''}`}><span>{icon&&<Icon name={icon} size={13}/>}{label}</span><b>{value}{unit&&<small> {unit}</small>}</b>{foot&&<p>{foot}</p>}</div>}

@@ -151,3 +151,62 @@
 .operations-map .mrail .mrail__wide:hover { background: var(--mg-hover) !important; color: var(--mg-ink) !important; }
 .map-display__seg.map-display__seg--2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 .map-display__seg--2 button { white-space: nowrap; }
+
+/* =====================================================================
+   Dock de commandes (rail de la carte) — mêmes couleurs, même verre, mêmes
+   liserés que le reste de FIREWATCH AFRICA (jetons --mg-*). Seuls changent :
+   la forme, les proportions, les animations et les interactions.
+   ===================================================================== */
+.operations-map .mrail { border-radius: 20px !important; padding: 7px; gap: 3px; isolation: isolate; animation: dock-in 420ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes dock-in { from { opacity: 0; transform: translateX(14px); } }
+.operations-map .mrail > button, .operations-map .mrail > .mrail__sep { animation: dock-item 360ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes dock-item { from { opacity: 0; transform: translateX(8px); } }
+.operations-map .mrail > :nth-child(3) { animation-delay: 40ms; } .operations-map .mrail > :nth-child(4) { animation-delay: 60ms; }
+.operations-map .mrail > :nth-child(5) { animation-delay: 80ms; } .operations-map .mrail > :nth-child(6) { animation-delay: 100ms; }
+.operations-map .mrail > :nth-child(7) { animation-delay: 120ms; } .operations-map .mrail > :nth-child(8) { animation-delay: 140ms; }
+.operations-map .mrail > :nth-child(9) { animation-delay: 160ms; } .operations-map .mrail > :nth-child(10) { animation-delay: 180ms; }
+.operations-map .mrail > :nth-child(11) { animation-delay: 200ms; } .operations-map .mrail > :nth-child(12) { animation-delay: 220ms; }
+.operations-map .mrail > :nth-child(13) { animation-delay: 240ms; } .operations-map .mrail > :nth-child(14) { animation-delay: 260ms; }
+
+.operations-map .mrail button { z-index: 1; border-radius: 13px; transition: background 160ms, color 160ms, border-color 160ms; }
+.operations-map .mrail button svg { transition: transform 200ms cubic-bezier(.3,1.4,.5,1); }
+.operations-map .mrail button:hover svg { transform: translateY(-1px) scale(1.08); }
+.operations-map .mrail button:active svg { transform: scale(.92); transition-duration: 80ms; }
+
+/* Repère glissant : les couleurs de l'état actif existant, sur un seul élément qui se déplace. */
+.mrail__glow {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: 13px;
+  background: linear-gradient(135deg, rgba(79,191,173,.28), rgba(79,191,173,.10)); border: 1px solid rgba(79,191,173,.6);
+  transition: transform 340ms cubic-bezier(.3,1.25,.5,1), width 240ms ease, height 240ms ease, opacity 180ms ease, background 200ms, border-color 200ms;
+}
+.mrail__glow::before { content: ""; position: absolute; left: -7px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--br-primary, #4FBFAD); transition: background 200ms; }
+.mrail__glow.is-ember { background: linear-gradient(135deg, rgba(255,133,71,.30), rgba(255,133,71,.10)); border-color: rgba(255,133,71,.6); }
+.mrail__glow.is-ember::before { background: #FF8547; }
+/* Les outils ouverts laissent le repère glissant porter l'état (la chronologie garde le sien). */
+.operations-map .mrail button[data-tool][aria-pressed="true"] { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.operations-map .mrail button[data-tool][aria-pressed="true"]::before { display: none; }
+.operations-map .mrail button[data-tool][aria-pressed="true"] svg { color: var(--mg-ink); }
+
+/* Séparateurs de groupes : trait fin qui s'estompe aux extrémités. */
+.operations-map .mrail .mrail__sep { height: 1px; margin: 5px 6px !important; opacity: 1; background: linear-gradient(90deg, transparent, var(--mg-tile-line), transparent) !important; }
+
+/* Infobulles : apparaissent après un court temps au survol (pas de clignotement en balayant le dock), tout de suite au clavier. */
+.operations-map .mrail button::after { transition: opacity 140ms ease, transform 160ms cubic-bezier(.2,.8,.2,1); transition-delay: 0ms; }
+.operations-map .mrail button:hover::after { transition-delay: 320ms; }
+.operations-map .mrail button:focus-visible::after { transition-delay: 0ms; }
+.operations-map .mrail button:focus-visible { outline: 2px solid var(--br-primary-text, #8ED9CB); outline-offset: 1px; }
+
+/* Mode « avec noms » : les libellés apparaissent en fondu une fois le dock élargi. */
+.operations-map .mrail.is-wide .mrail__lbl { animation: dock-label 220ms 80ms ease both; }
+@keyframes dock-label { from { opacity: 0; transform: translateX(-4px); } }
+
+@media (max-width: 767px) {
+  .mrail__glow::before { left: 10px; right: 10px; top: auto; bottom: -7px; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
+  .operations-map .mrail .mrail__sep { width: 1px; height: auto; margin: 6px 3px !important; background: linear-gradient(180deg, transparent, var(--mg-tile-line), transparent) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .operations-map .mrail, .operations-map .mrail > *, .operations-map .mrail.is-wide .mrail__lbl { animation: none !important; }
+  .mrail__glow, .operations-map .mrail button svg { transition: none !important; }
+}
+:root[data-reduce-motion="true"] .operations-map .mrail, :root[data-reduce-motion="true"] .operations-map .mrail > * { animation: none !important; }
+:root[data-reduce-motion="true"] .mrail__glow, :root[data-reduce-motion="true"] .operations-map .mrail button svg { transition: none !important; }
