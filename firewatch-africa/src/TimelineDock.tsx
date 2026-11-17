@@ -2,6 +2,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {get} from './api';
 import {Icon} from '../components/src/components/Icon';
+import {MonthlyTimeline} from './MonthlyTimeline';
 
 type Row={day:string;sensor:string;detections:number;active_cells:number};
 const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
@@ -19,6 +20,10 @@ export function TimelineDock({query,open,onToggle,start,end,setRange,playSignal}
  // La chronologie ignore la période choisie : elle doit toujours montrer tous les jours disponibles.
  const base=useMemo(()=>{const p=new URLSearchParams(query);p.delete('start_date');p.delete('end_date');return p.toString();},[query]);
  const tl=useQuery<{items:Row[]}>({queryKey:['timeline',base,''],queryFn:()=>get('/statistics/timeline',base)});
+ // Deux graphiques au choix : jours récents (barres MODIS/VIIRS) ou historique mois par mois face à la normale.
+ const [kind,setKindState]=useState<'jours'|'mois'>(()=>{try{return localStorage.getItem('fw.tdock.kind')==='mois'?'mois':'jours'}catch{return 'jours'}});
+ const setKind=(k:'jours'|'mois')=>{setKindState(k);setPlaying(false);try{localStorage.setItem('fw.tdock.kind',k)}catch{/* rien */}};
+ const fam=new URLSearchParams(query).get('sensor_family')||new URLSearchParams(query).get('sensor');
  const [span,setSpan]=useState(30),[win,setWin]=useState(1),[speed,setSpeed]=useState(1),[playing,setPlaying]=useState(false),[cursor,setCursor]=useState(-1);
  const all=useMemo(()=>{const m=new Map<string,{modis:number;viirs:number}>();(tl.data?.items||[]).forEach(r=>{const o=m.get(r.day)??{modis:0,viirs:0};if(r.sensor==='MODIS')o.modis+=Number(r.detections||0);else o.viirs+=Number(r.detections||0);m.set(r.day,o);});
   return [...m.entries()].sort(([a],[b])=>a<b?-1:1).map(([day,v])=>({day,...v,total:v.modis+v.viirs}));},[tl.data]);
@@ -35,7 +40,7 @@ export function TimelineDock({query,open,onToggle,start,end,setRange,playSignal}
  const play=()=>{if(playing){setPlaying(false);return;}if(cursor<0||cursor>=days.length-1)apply(Math.min(days.length-1,w-1));setPlaying(true);};
  // Lecture demandée par l'assistant vocal : fenêtre de N jours, départ au début de la plage chargée.
  const pending=useRef<{days?:number}|null>(null);
- useEffect(()=>{if(playSignal)pending.current={days:playSignal.days};},[playSignal?.k]);
+ useEffect(()=>{if(playSignal){pending.current={days:playSignal.days};setKindState('jours');}},[playSignal?.k]);
  useEffect(()=>{const p=pending.current;if(!p||!days.length)return;pending.current=null;
   const n=Math.max(1,Math.min(p.days??1,maxWin));setWin(n);setCursor(-1);
   setTimeout(()=>{setRange(days[0].day,days[Math.min(days.length-1,n-1)].day);setCursor(Math.min(days.length-1,n-1));setPlaying(true);},250);
@@ -51,6 +56,11 @@ export function TimelineDock({query,open,onToggle,start,end,setRange,playSignal}
    <Icon name={open?'chevronDown':'chevronUp'} size={16}/>
   </button>
   {open&&<div className="tdock__body">
+   <div className="tdock__kind" role="group" aria-label="Type de graphique">
+    <button type="button" aria-pressed={kind==='jours'} onClick={()=>setKind('jours')}><Icon name="bars" size={15}/>Jours récents</button>
+    <button type="button" aria-pressed={kind==='mois'} onClick={()=>setKind('mois')}><Icon name="area" size={15}/>Historique mensuel</button>
+   </div>
+   {kind==='mois'?<MonthlyTimeline query={query} end={end} setRange={setRange} family={fam==='MODIS'||fam==='VIIRS'?fam:undefined}/>:<>
    <div className="tdock__controls">
     <div className="tdock__transport">
      <button type="button" onClick={()=>{setPlaying(false);apply(cursor-1)}} disabled={!days.length||cursor<=0} aria-label="Jour précédent"><Icon name="stepBack" size={16}/></button>
@@ -78,6 +88,7 @@ export function TimelineDock({query,open,onToggle,start,end,setRange,playSignal}
      <span className="tdock__sum">{sum?<><b>{fr(sum.modis+sum.viirs)}</b> détections sur la période · <i className="m"/>MODIS {fr(sum.modis)} · <i className="v"/>VIIRS {fr(sum.viirs)}</>:'Lancez la lecture ou cliquez un jour pour filtrer la carte.'}</span>
      <span>{label(days[days.length-1].day)}</span>
     </div>
+   </>}
    </>}
   </div>}
  </section>;

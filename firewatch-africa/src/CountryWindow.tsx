@@ -16,7 +16,7 @@ export type Basemap=keyof typeof BASEMAPS;
 export const DISPLAYS={points:'Lumineux',heat:'Chaleur',sensors:'Capteurs'} as const;
 export type Display=keyof typeof DISPLAYS;
 
-export function MapDisplayControl({basemap,display,allPoints,provinces,onBasemap,onDisplay,onAllPoints,onProvinces,extra}:{extra?:React.ReactNode;basemap:Basemap;display:Display;allPoints:boolean;provinces:boolean;onBasemap:(b:Basemap)=>void;onDisplay:(d:Display)=>void;onAllPoints:(v:boolean)=>void;onProvinces:(v:boolean)=>void}){
+export function MapDisplayControl({basemap,display,allPoints,provinces,onBasemap,onDisplay,onAllPoints,onProvinces,extra,projection,onProjection}:{projection?:'globe'|'mercator';onProjection?:(p:'globe'|'mercator')=>void;extra?:React.ReactNode;basemap:Basemap;display:Display;allPoints:boolean;provinces:boolean;onBasemap:(b:Basemap)=>void;onDisplay:(d:Display)=>void;onAllPoints:(v:boolean)=>void;onProvinces:(v:boolean)=>void}){
  const [open,setOpen]=useState(false);
  const root=useRef<HTMLDivElement>(null);
  // Un seul panneau ouvert à la fois : clic à l'extérieur, Échap ou ouverture d'une fenêtre le referment.
@@ -31,6 +31,11 @@ export function MapDisplayControl({basemap,display,allPoints,provinces,onBasemap
    <Icon name="filter" size={16}/><span>Affichage</span><Icon name="chevronDown" size={14} className="map-display__chev"/>
   </button>
   {open&&<div className="map-display__panel">
+   {onProjection&&<><span className="map-display__label">Vue</span>
+   <div className="map-display__seg map-display__seg--2" role="group" aria-label="Projection de la carte">
+    <button aria-pressed={projection==='globe'} onClick={()=>onProjection('globe')}>Globe</button>
+    <button aria-pressed={projection==='mercator'} onClick={()=>onProjection('mercator')}>Carte plane</button>
+   </div></>}
    <span className="map-display__label">Fond de carte</span>
    <div className="map-display__grid" role="group" aria-label="Fond de carte">
     {(Object.keys(BASEMAPS) as Basemap[]).map(b=><button key={b} aria-pressed={basemap===b} className={`map-display__opt is-${b}`} onClick={()=>onBasemap(b)}><i aria-hidden="true"/>{BASEMAPS[b].label}</button>)}
@@ -53,7 +58,7 @@ const day=(v?:string)=>v?new Date(v).toLocaleDateString('fr-FR',{day:'numeric',m
 const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 const iso=(d:Date)=>d.toISOString().slice(0,10);
 
-export type Zone={kind:'country'|'region'|'province';name:string;iso?:string;name_en?:string;polygons?:number[][][]};
+export type Zone={kind:'country'|'region'|'province'|'continent';name:string;iso?:string;name_en?:string;polygons?:number[][][];cells?:number[][]};
 type Period={key:string;label:string;start?:string;end?:string};
 
 function periods(latest:string):Period[]{
@@ -114,7 +119,7 @@ export function ZoneWindow({zone:initial,query,sensor,onClose,onPeriod}:{zone:Zo
   else if(gran==='month'){const [y,m]=p.split('-').map(Number);setPeriod({key:'m'+p.slice(0,7),label:`${MONTHS[m-1]} ${y}`,start:p,end:iso(new Date(Date.UTC(y,m,0)))});}
  };
  const max=Math.max(1,...series.map(r=>r.active_cells));
- const kindLabel={country:'Pays',region:'Région',province:'Province'}[zone.kind];
+ const kindLabel={country:'Pays',region:'Région',province:'Province',continent:'Continent'}[zone.kind];
 
  return createPortal(<section ref={box} tabIndex={-1} className={`cwin${min?' is-min':''}`} role="dialog" aria-label={`${kindLabel} : ${zone.name}`}
    style={{left:pos.x,top:pos.y}} onKeyDown={e=>{if(e.key==='Escape')onClose();}}>
@@ -180,7 +185,7 @@ export function ZoneWindow({zone:initial,query,sensor,onClose,onPeriod}:{zone:Zo
      <tbody>{d.provinces.map((p:any)=><tr key={p.name} tabIndex={0} onClick={()=>setStack(s=>[...s,{kind:'province',iso:p.iso,name:p.name}])} onKeyDown={e=>{if(e.key==='Enter')setStack(s=>[...s,{kind:'province',iso:p.iso,name:p.name}]);}}>
       <th scope="row">{p.name}</th><td>{n(p.active_cells)}</td><td>{n(p.detections)}</td><td>{n(p.active_days)}</td><td>{n(p.max_frp,1)}</td></tr>)}</tbody>
     </table></div>
-   </div>:<p className="cwin__note">{zone.kind==='province'?'Vous êtes déjà au niveau de la province.':'Aucune limite de province disponible pour cette zone (seul le Gabon est chargé).'}</p>)}
+   </div>:<p className="cwin__note">{zone.kind==='province'?'Vous êtes déjà au niveau de la province.':zone.kind==='continent'?'Cliquez un pays du continent sur la carte pour son détail.':'Aucune limite de province disponible pour cette zone (seul le Gabon est chargé).'}</p>)}
 
    {tab==='sensors'&&<div className="table-wrap zt"><table>
     <thead><tr><th scope="col">Satellite</th><th scope="col">Famille</th><th scope="col">Détections</th><th scope="col">Cellules</th><th scope="col">Puissance moy. MW</th><th scope="col">Pic MW</th></tr></thead>

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Earth, History, Flame, Crosshair, Columns2, BookOpen, Sparkles, Settings2, SlidersHorizontal,
   RotateCcw, X, Menu, PanelLeftClose, PanelLeftOpen, Download, ChevronDown, TrendingUp, TrendingDown, Equal, Plus, Minus,
   TriangleAlert, Info, WifiOff, Server, Inbox, PinOff, Clock, Send, RefreshCw, Satellite, ArrowRight, Table2, Moon, Sun,
-  ChartSpline, Layers, CalendarDays, GitMerge, Radar, Activity, Map as MapIcon, Target, Eye, Check, Link2, Play, Pause, SkipBack, SkipForward, ChevronUp, Image as ImageIcon, FileJson, Minimize2, Maximize2, Siren, BellOff, Bell, LocateFixed, Zap, Mic, MicOff, Volume2,
+  ChartSpline, ChartColumn, ChartArea, Layers, CalendarDays, GitMerge, Radar, Activity, Map as MapIcon, Target, Eye, Check, Link2, Play, Pause, SkipBack, SkipForward, ChevronUp, Image as ImageIcon, FileJson, Minimize2, Maximize2, Siren, BellOff, Bell, LocateFixed, Zap, Mic, MicOff, Volume2,
 } from 'lucide-react';
 
 type L = ComponentType<any>;
@@ -15,7 +15,7 @@ const M: Record<string, L> = {
   trendUp: TrendingUp, trendDown: TrendingDown, equal: Equal, plus: Plus, minus: Minus, crosshair: Target,
   alert: TriangleAlert, info: Info, wifiOff: WifiOff, server: Server, inbox: Inbox, pinOff: PinOff, clock: Clock,
   send: Send, refresh: RefreshCw, satellite: Satellite, flame: Flame, arrowRight: ArrowRight, table: Table2,
-  moon: Moon, sun: Sun, chart: ChartSpline, layers: Layers, calendar: CalendarDays, merge: GitMerge, radar: Radar,
+  moon: Moon, sun: Sun, chart: ChartSpline, bars: ChartColumn, area: ChartArea, layers: Layers, calendar: CalendarDays, merge: GitMerge, radar: Radar,
   activity: Activity, map: MapIcon, eye: Eye, check: Check, link: Link2, play: Play, pause: Pause, stepBack: SkipBack, stepForward: SkipForward, chevronUp: ChevronUp, image: ImageIcon, json: FileJson, shrink: Minimize2, expand: Maximize2, siren: Siren, bellOff: BellOff, bell: Bell, locate: LocateFixed, zap: Zap, mic: Mic, micOff: MicOff, volume: Volume2,
 };
 

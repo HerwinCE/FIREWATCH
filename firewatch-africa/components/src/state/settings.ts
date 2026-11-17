@@ -6,8 +6,9 @@ export interface Settings {
   basemap: 'dark' | 'relief' | 'satellite'; cluster: boolean; labels: boolean; graticule: boolean;
   detail: 'simple' | 'standard' | 'expert'; reduceMotion: boolean; highContrast: boolean; largeText: boolean; assistant: boolean;
   /** Effets visuels des alertes (clignotement, scintillement) ; la détection reste active. */ alertEffects: boolean; alertAutoZoom: boolean;
+  /** Alertes thermiques : désactivées, plus aucun calcul, signal ni effet. */ alerts: boolean;
 }
-const DEFAULTS: Settings = { lang: 'fr', theme: 'dark', unit: 'km', tz: 'UTC', basemap: 'satellite', cluster: true, labels: true, graticule: true, detail: 'standard', reduceMotion: false, highContrast: false, largeText: false, assistant: true, alertEffects: true, alertAutoZoom: true };
+const DEFAULTS: Settings = { lang: 'fr', theme: 'dark', unit: 'km', tz: 'UTC', basemap: 'satellite', cluster: true, labels: true, graticule: true, detail: 'standard', reduceMotion: false, highContrast: false, largeText: false, assistant: true, alertEffects: true, alertAutoZoom: true, alerts: true };
 const KEY = 'fw.settings';
 const EARTH_OPERATIONS_RELEASE = 'fw.earth-operations.v1';
 const OPERATIONS_RELEASE = 'fw.operations-map.v1';

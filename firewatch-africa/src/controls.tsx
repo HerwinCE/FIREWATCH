@@ -40,7 +40,7 @@ export function HarmonizeButton({variant='chip'}:{variant?:'chip'|'block'}){
  const was=useRef(running);
  useEffect(()=>{
   if(was.current&&!running&&s){
-   if(s.status==='success'){setMsg({kind:'ok',text:s.rows_processed?`Harmonisation terminée : ${fr(s.rows_processed)} nouvelles lignes traitées, ${fr(s.groups_created)} rapprochements MODIS–VIIRS.`:`Données déjà à jour : aucune nouvelle détection à harmoniser (${fr(s.rows_vegetation)} détections de végétation prêtes).`});qc.invalidateQueries();}
+   if(s.status==='success'){setMsg({kind:'ok',text:s.rows_processed?`Harmonisation terminée : ${fr(s.rows_processed)} nouvelles lignes traitées, ${fr(s.groups_created)} rapprochements MODIS–VIIRS.`:`Données déjà à jour : aucune nouvelle détection à harmoniser (${fr(s.rows_vegetation)} détections de végétation prêtes).`});if(s.rows_processed)qc.invalidateQueries();}
    else if(s.status==='failed'||s.status==='error')setMsg({kind:'err',text:`Échec de l’harmonisation${s.error_message?` : ${s.error_message}`:''}.`});
   }
   was.current=running;

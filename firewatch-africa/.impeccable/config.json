@@ -20,6 +20,18 @@
         ],
         "createdAt": "2026-11-15T04:05:11.712Z",
         "reason": "Claude triage: L415 is a 2px neutral table-of-contents rail (standard nav pattern, not an accent card); toast accent at L464 was removed"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-17T00:28:18.108Z",
+        "reason": "user confirmed: asked not to change the fonts (« je ne parle pas de changer les polices d'écriture »); Inter is the established body face"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-17T00:28:18.330Z",
+        "reason": "user confirmed: asked not to change the fonts; Space Grotesk is the established display face"
       }
     ]
   }

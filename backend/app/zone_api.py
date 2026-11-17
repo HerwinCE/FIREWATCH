@@ -24,12 +24,14 @@ TABLE = "firewatch.harmonized_detections h"
 
 
 class ZoneRequest(BaseModel):
-    kind: Literal["country", "region", "province"] = "country"
+    kind: Literal["country", "region", "province", "continent"] = "country"
     iso: str | None = Field(default=None, max_length=3)
     name: str = Field(max_length=120)
     name_en: str | None = Field(default=None, max_length=120)
     # Anneaux extérieurs (lon, lat) : frontières Mapbox pour un pays, rectangle pour une région.
     polygons: list[list[list[float]]] | None = Field(default=None, max_length=400)
+    # Continent : mailles de 0,5° couvertes, par ligne [y, x début, x fin] (indices floor(lat×2), floor(lon×2)).
+    cells: list[list[int]] | None = Field(default=None, max_length=4000)
     start_date: date | None = None
     end_date: date | None = None
     sensor: Literal["MODIS", "VIIRS"] | None = None
@@ -54,6 +56,41 @@ def polygon_sql(polygons: list[list[list[float]]], params: dict, prefix: str = "
     return "(" + " OR ".join(clauses) + ")", (min(xs), min(ys), max(xs), max(ys))
 
 
+def cells_sql(cells: list[list[int]]) -> tuple[str, tuple]:
+    """Test « point dans le continent » par mailles de 0,5° : une recherche dans un ensemble d'entiers
+    (table de hachage côté PostgreSQL), bien plus rapide qu'un test sur des centaines de polygones."""
+    keys: set[int] = set()
+    for row in cells:
+        if len(row) != 3:
+            continue
+        y, x0, x1 = (int(v) for v in row)
+        if not (-180 <= y < 180 and -360 <= x0 <= x1 < 360):
+            continue
+        keys.update((y + 200) * 1000 + x + 400 for x in range(x0, x1 + 1))
+    if not keys:
+        raise HTTPException(422, "Géométrie du continent vide.")
+    ys = [k // 1000 - 200 for k in keys]
+    xs = [k % 1000 - 400 for k in keys]
+    literal = "{" + ",".join(map(str, sorted(keys))) + "}"  # entiers validés ci-dessus : aucune injection possible
+    clause = (f"((floor(h.latitude * 2)::int + 200) * 1000 + floor(h.longitude * 2)::int + 400) "
+              f"= ANY('{literal}'::int[])")
+    return clause, (min(xs) / 2, min(ys) / 2, (max(xs) + 1) / 2, (max(ys) + 1) / 2)
+
+
+def zone_space(body: "ZoneRequest", params: dict) -> tuple[str, tuple]:
+    """Condition spatiale et emprise d'une zone : province, pays ou région (polygones), continent (mailles)."""
+    if body.kind == "continent" and body.cells:
+        return cells_sql(body.cells)
+    if body.kind == "province":
+        p = province(body.iso or "", body.name)
+        if p is None:
+            raise HTTPException(404, "Province inconnue.")
+        return polygon_sql(p["polygons"], params)
+    if body.polygons:
+        return polygon_sql(body.polygons, params)
+    raise HTTPException(422, "Fournissez la géométrie de la zone.")
+
+
 def _months(start: date, end: date):
     d = date(start.year, start.month, 1)
     while d <= end:
@@ -72,22 +109,13 @@ async def _archive_countries(db: AsyncSession) -> set[str]:
 @router.post("/zone")
 @router.post("/country")
 async def zone(body: ZoneRequest, db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
-    if body.kind == "province":
-        p = province(body.iso or "", body.name)
-        if p is None:
-            raise HTTPException(404, "Province inconnue.")
-        polygons = p["polygons"]
-    elif body.polygons:
-        polygons = body.polygons
-    else:
-        raise HTTPException(422, "Fournissez la géométrie de la zone.")
 
     filters = dict(bbox=None, sensor_family=body.sensor, sensor=None, satellite=body.satellite,
                    confidence=body.confidence, vegetation_only=body.vegetation_only)
     f_all = common_filters(start_date=None, end_date=None, **filters)
     f_per = common_filters(start_date=body.start_date, end_date=body.end_date, **filters)
     params = {**f_all.params, **f_per.params}
-    inside, bbox = polygon_sql(polygons, params)
+    inside, bbox = zone_space(body, params)
     w, s, e, n = bbox
     params.update(bw=w, bs=s, be=e, bn=n)
     space = f"h.longitude BETWEEN :bw AND :be AND h.latitude BETWEEN :bs AND :bn AND {inside}"
@@ -134,7 +162,7 @@ async def zone(body: ZoneRequest, db: Annotated[AsyncSession, Depends(get_db)]) 
 
     # Provinces recoupant la zone (une seule passe, CASE sur les polygones de province).
     provinces = []
-    if body.kind != "province":
+    if body.kind not in ("province", "continent"):  # un continent : pas de détail par province
         candidates = provinces_intersecting(bbox)
         if body.kind == "country":
             # Un pays ne liste que SES provinces (pas celles d'un voisin dont l'emprise le recoupe).
@@ -219,20 +247,11 @@ async def _compact_points(db: AsyncSession, where: str, params: dict) -> dict:
 @router.post("/zone-points")
 async def zone_points(body: ZoneRequest, db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
     """Points d'une zone cliquée (pays, région, province) sur la période choisie dans sa fenêtre."""
-    if body.kind == "province":
-        p = province(body.iso or "", body.name)
-        if p is None:
-            raise HTTPException(404, "Province inconnue.")
-        polygons = p["polygons"]
-    elif body.polygons:
-        polygons = body.polygons
-    else:
-        raise HTTPException(422, "Fournissez la géométrie de la zone.")
     f = common_filters(start_date=body.start_date, end_date=body.end_date, bbox=None, sensor_family=body.sensor,
                        sensor=None, satellite=body.satellite, confidence=body.confidence,
                        vegetation_only=body.vegetation_only)
     params = dict(f.params)
-    inside, (w, s, e, n) = polygon_sql(polygons, params)
+    inside, (w, s, e, n) = zone_space(body, params)
     params.update(bw=w, bs=s, be=e, bn=n)
     where = f"{f.where} AND h.longitude BETWEEN :bw AND :be AND h.latitude BETWEEN :bs AND :bn AND {inside}"
     if body.kind == "country" and not ({body.name.lower(), (body.name_en or "").lower()} & await _archive_countries(db)):

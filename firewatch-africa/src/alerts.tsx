@@ -1,8 +1,9 @@
 /* Alertes thermiques : niveaux, centre d'alertes, bandeau, voile critique.
-   La détection tourne toujours ; seuls les effets visuels se désactivent. */
+   Elles peuvent être coupées entièrement (Paramètres) ; leurs effets visuels, séparément. */
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Icon} from '../components/src/components/Icon';
+import {useSettings} from '../components/src/state/settings';
 
 export type Level='faible'|'modere'|'eleve'|'critique';
 export type Alert={id:string;level:Level;label:string;rank:number;lon:number;lat:number;bbox:[number,number,number,number];cells:number;detections:number;max_frp:number;total_frp:number;modis:number;viirs:number;last_seen:string;province:string|null};
@@ -16,10 +17,13 @@ export const LEVELS:{key:Level;label:string;color:string;icon:string;hint:string
 ];
 export const levelOf=(k:Level|null|undefined)=>LEVELS.find(l=>l.key===k)??LEVELS[0];
 
+/** Alertes de la vue. Désactivées dans les Paramètres : aucune requête, aucune donnée. */
 export function useAlerts(scope:'world'|'africa'|'gabon',sensor?:string){
+ const enabled=useSettings(s=>s.alerts!==false);
  const p=new URLSearchParams({scope});if(sensor)p.set('sensor',sensor);
- return useQuery<AlertData>({queryKey:['alerts',p.toString()],queryFn:()=>fetch('/api/alerts?'+p).then(r=>{if(!r.ok)throw new Error(String(r.status));return r.json();}),
-  refetchInterval:10*60_000,staleTime:5*60_000});
+ const q=useQuery<AlertData>({queryKey:['alerts',p.toString()],queryFn:()=>fetch('/api/alerts?'+p).then(r=>{if(!r.ok)throw new Error(String(r.status));return r.json();}),
+  refetchInterval:10*60_000,staleTime:5*60_000,enabled});
+ return {enabled,data:enabled?q.data:undefined,isPending:enabled&&q.isPending};
 }
 
 const coord=(a:Alert)=>`${Math.abs(a.lat).toLocaleString('fr-FR',{maximumFractionDigits:1})}° ${a.lat>=0?'N':'S'} · ${Math.abs(a.lon).toLocaleString('fr-FR',{maximumFractionDigits:1})}° ${a.lon>=0?'E':'O'}`;
@@ -32,8 +36,10 @@ function Switch({on,label,sub,onChange}:{on:boolean;label:string;sub:string;onCh
 }
 
 /** Centre d'alertes (panneau du rail) : synthèse par niveau, réglages, liste localisable. */
-export function AlertCenter({data,loading,names,effects,autoZoom,onEffects,onAutoZoom,onLocate}:{data?:AlertData;loading:boolean;names:Record<string,string>;effects:boolean;autoZoom:boolean;onEffects:(v:boolean)=>void;onAutoZoom:(v:boolean)=>void;onLocate:(a:Alert)=>void}){
+export function AlertCenter({enabled=true,onEnabled,data,loading,names,effects,autoZoom,onEffects,onAutoZoom,onLocate}:{enabled?:boolean;onEnabled?:(v:boolean)=>void;data?:AlertData;loading:boolean;names:Record<string,string>;effects:boolean;autoZoom:boolean;onEffects:(v:boolean)=>void;onAutoZoom:(v:boolean)=>void;onLocate:(a:Alert)=>void}){
  const [only,setOnly]=useState<Level|null>(null);
+ const master=onEnabled&&<div className="al-switches"><Switch on={enabled} onChange={onEnabled} label="Alertes thermiques" sub={enabled?'Calcul automatique, signal sur la carte et dans l’en-tête.':'Désactivées : aucun calcul, aucun signal, aucun effet.'}/></div>;
+ if(!enabled)return <>{master}<p>Les alertes sont désactivées. Les points chauds restent consultables normalement sur la carte.</p></>;
  if(loading&&!data)return <p role="status">Analyse de l’activité thermique…</p>;
  if(!data)return <p role="alert">Alertes indisponibles : le serveur ne répond pas.</p>;
  const list=data.alerts.filter(a=>!only||a.level===only);
@@ -43,6 +49,7 @@ export function AlertCenter({data,loading,names,effects,autoZoom,onEffects,onAut
    {[...LEVELS].reverse().map(l=><button key={l.key} type="button" className={`al-level is-${l.key}`} aria-pressed={only===l.key} onClick={()=>setOnly(o=>o===l.key?null:l.key)}>
     <span><Icon name={l.icon} size={14}/>{l.label}</span><b>{fr(data.counts[l.key]??0)}</b></button>)}
   </div>
+  {master}
   <div className="al-switches">
    <Switch on={effects} onChange={onEffects} label="Effets visuels" sub="Clignotement et scintillement. La détection et la liste restent actives."/>
    <Switch on={autoZoom} onChange={onAutoZoom} label="Zoom automatique" sub="La carte se centre sur toute nouvelle alerte élevée ou critique."/>

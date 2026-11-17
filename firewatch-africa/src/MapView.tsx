@@ -71,6 +71,32 @@ function framePadding(r:DOMRect){
  return pad;
 }
 
+/** Continents (propriété « region » des frontières Mapbox) et leur cadrage. */
+export const CONTINENTS:{key:string;label:string;box:Box}[]=[
+ {key:'Africa',label:'Afrique',box:[-19,-36,52,38]},{key:'Europe',label:'Europe',box:[-25,35,45,71]},
+ {key:'Asia',label:'Asie',box:[26,-10,150,72]},{key:'Americas',label:'Amériques',box:[-168,-56,-34,72]},{key:'Oceania',label:'Océanie',box:[112,-47,179,-1]},
+];
+/** Mailles de 0,5° couvertes par des anneaux (lon, lat), par ligne : [y, x début, x fin].
+    Balayage à trois latitudes par ligne + chaque sommet : les côtes et les îles sont retenues. */
+function cellsOf(rings:number[][][]):number[][]{
+ const rows=new Map<number,Set<number>>();
+ const add=(y:number,x:number)=>{if(x<-360||x>=360||y<-180||y>=180)return;let s=rows.get(y);if(!s){s=new Set();rows.set(y,s);}s.add(x);};
+ rings.forEach(r=>{
+  if(r.length<3)return;let s=90,n=-90;r.forEach(([x,y])=>{if(y<s)s=y;if(y>n)n=y;add(Math.floor(y*2),Math.floor(x*2));});
+  for(let y=Math.floor(s*2);y<=Math.floor(n*2);y++){
+   [.1,.5,.9].forEach(f=>{const lat=(y+f)/2,xs:number[]=[];
+    for(let i=0;i<r.length;i++){const [x1,y1]=r[i],[x2,y2]=r[(i+1)%r.length];if(Math.abs(x2-x1)>180)continue;
+     if((y1<=lat&&y2>lat)||(y2<=lat&&y1>lat))xs.push(x1+(lat-y1)/(y2-y1)*(x2-x1));}
+    xs.sort((a,b)=>a-b);for(let k=0;k+1<xs.length;k+=2)for(let x=Math.floor(xs[k]*2);x<=Math.floor(xs[k+1]*2);x++)add(y,x);});
+  }
+ });
+ const out:number[][]=[];
+ [...rows.entries()].sort((a,b)=>a[0]-b[0]).forEach(([y,set])=>{const xs=[...set].sort((a,b)=>a-b);let a=xs[0],b=xs[0];
+  for(let i=1;i<=xs.length;i++){if(i<xs.length&&xs[i]===b+1){b=xs[i];continue;}out.push([y,a,b]);if(i<xs.length){a=b=xs[i];}}});
+ return out;
+}
+type Probe={lon:number;lat:number;radius_km:number;sensors:Record<string,{raw:number;superseded:number;non_vegetation:number;kept:number;cells:number;linked:number;high:number;nominal:number;low:number;max_frp:number|null;mean_frp:number|null;last_time:string|null}>;harmonized:{detections:number;cells:number;groups:number;max_frp:number|null}};
+
 /** Format compact de l'API -> GeoJSON pour Mapbox. */
 function toGeoJSON(c?:Compact):GeoJSON.FeatureCollection{
  if(!c)return EMPTY;
@@ -90,7 +116,14 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
  const setDisplay=(d:Display)=>{setDisplayState(d);lsSet('fw-map-display',d)};
  const setShowProvinces=(v:boolean)=>{setShowProvincesState(v);lsSet('fw-provinces',v?'1':'0')};
  const [zone,setZone]=useState<Zone|null>(null);
+ // Vue : globe à chaque ouverture de la carte ; « Carte plane » (l'ancienne vue) au choix dans Affichage.
+ const [projection,setProjection]=useState<'globe'|'mercator'>('globe');const projRef=useRef(projection);projRef.current=projection;
  const focusIso=zone?(zone.kind==='province'?zone.iso:zone.kind==='country'?zone.iso:undefined):undefined;
+ const continent=zone?.kind==='continent'?CONTINENTS.find(c=>c.label===zone.name)?.key:undefined;
+ // Inspecteur : un tableau capteurs + harmonisation suit le curseur ; un clic l'épingle.
+ const [inspect,setInspect]=useState(false);const inspectRef=useRef(false);inspectRef.current=inspect;
+ const [probe,setProbe]=useState<{x:number;y:number;lon:number;lat:number;pinned:boolean;data?:Probe;loading:boolean;error?:boolean}|null>(null);
+ const probeRef=useRef(probe);probeRef.current=probe;
  const [zonePeriod,setZonePeriod]=useState<{start?:string;end?:string}>({});
  const filters=Object.fromEntries(new URLSearchParams(query));delete (filters as any).bbox;
  const scope=gabon?'gabon':new URLSearchParams(query).get('bbox')==='-20,-36,53,38'?'africa':'world';
@@ -113,14 +146,15 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
  const before=useRef<{center:mapboxgl.LngLat;zoom:number;bearing:number;pitch:number}|null>(null);
  /** Vol vers une zone : la caméra prend de la hauteur, traverse, puis plonge sur la zone,
      cadrée dans la partie de la carte que ne couvrent ni la fenêtre de zone ni les panneaux. */
- const last=useRef<{b:Box;kind:'country'|'province';layer:string}|null>(null);
- const zoomTo=useRef((b:Box,kind:'country'|'province',layer:string)=>{
+ const last=useRef<{b:Box;kind:'country'|'province'|'continent';layer:string}|null>(null);
+ const zoomTo=useRef((b:Box,kind:'country'|'province'|'continent',layer:string)=>{
   const m=map.current;if(!m)return;
   if(!before.current){const c=m.getCenter();before.current={center:c,zoom:m.getZoom(),bearing:m.getBearing(),pitch:m.getPitch()};}
   const r=m.getContainer().getBoundingClientRect();
   const pad=framePadding(r);
   last.current={b,kind,layer};
-  const cam=m.cameraForBounds([[b[0],b[1]],[b[2],b[3]]],{padding:pad,maxZoom:kind==='province'?8.6:7.4});
+  spin.current=false;
+  const cam=m.cameraForBounds([[b[0],b[1]],[b[2],b[3]]],{padding:pad,maxZoom:kind==='province'?8.6:kind==='continent'?3.6:7.4});
   if(!cam)return;
   const pulse=()=>{if(calmMotion()||!m.getLayer(layer))return;const t0=performance.now();
    const step=(t:number)=>{const k=Math.min(1,(t-t0)/1100);if(!m.getLayer(layer))return;
@@ -129,14 +163,36 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
    requestAnimationFrame(step);};
   if(calmMotion()){m.jumpTo(cam);return;}
   m.once('moveend',pulse);
-  m.flyTo({...cam,curve:1.6,speed:1.1,duration:Math.min(2600,Math.max(1300,900+Math.abs((cam.zoom??m.getZoom())-m.getZoom())*260)),easing:EASE,essential:true});
+  // Vol vers la zone : en s'approchant, le globe s'aplatit de lui-même en carte plane (zoom 5 à 6).
+  m.flyTo({...cam,bearing:0,pitch:0,curve:1.6,speed:1.1,duration:Math.min(2800,Math.max(1400,1000+Math.abs((cam.zoom??m.getZoom())-m.getZoom())*280)),easing:EASE,essential:true});
  });
+ // Maillage de chaque continent, calculé une fois quand la Terre entière est chargée (vue globe) :
+ // zoomé sur un pays, les tuiles des autres régions ne sont plus disponibles.
+ const contCells=useRef<Record<string,number[][]>>({});
+ const continentCells=(m:mapboxgl.Map,key:string)=>{
+  const rings:number[][][]=[];
+  m.querySourceFeatures('countries',{sourceLayer:'country_boundaries',filter:['==',['get','region'],key]}).forEach(f=>{const g=f.geometry as GeoJSON.Polygon|GeoJSON.MultiPolygon;
+   (g.type==='Polygon'?[g.coordinates[0]]:g.type==='MultiPolygon'?g.coordinates.map(p=>p[0]):[]).forEach(r=>rings.push(r as number[][]));});
+  const cells=cellsOf(rings);if(cells.length&&m.getZoom()<=2.6)contCells.current[key]=cells;return cells;};
+ // Rotation lente du globe à l'accueil, arrêtée dès que l'utilisateur prend la main.
+ const spin=useRef(false);
+ const spinStep=useRef(()=>{const m=map.current;if(!m||!spin.current||projRef.current!=='globe'||m.getZoom()>3.2||calmMotion())return;
+  const c=m.getCenter();m.easeTo({center:[c.lng-7,c.lat],duration:2600,easing:t=>t,essential:true});});
 
  useEffect(()=>{
   if(!container.current)return;
   const token=import.meta.env.VITE_MAPBOX_TOKEN;
   if(!token){setError('Configurez VITE_MAPBOX_TOKEN dans .env.local.');return;}
-  const m=new mapboxgl.Map({container:container.current,accessToken:token,style:BASEMAPS[basemap].style,projection:'mercator',preserveDrawingBuffer:true,center:gabon?[11.5,-.6]:[15,5],zoom:gabon?5:1.1});map.current=m;
+  // Globe au départ ; l'arrivée rapproche la Terre, puis tout zoom sur une zone aplatit la vue en carte.
+  const intro=!calmMotion();
+  const m=new mapboxgl.Map({container:container.current,accessToken:token,style:BASEMAPS[basemap].style,projection:projRef.current,preserveDrawingBuffer:true,
+   center:gabon?[14,2]:[18,6],zoom:intro?.35:gabon?5:1.55});map.current=m;
+  m.on('style.load',()=>{const light=basemap==='light'||basemap==='relief';
+   m.setFog(light?{color:'rgb(226,234,242)','high-color':'rgb(150,186,222)','horizon-blend':.08,'space-color':'rgb(206,218,232)','star-intensity':0}
+    :{color:'rgb(22,26,32)','high-color':'rgb(44,74,108)','horizon-blend':.07,'space-color':'rgb(7,9,13)','star-intensity':.32});});
+  const stop=()=>{spin.current=false;};
+  (['mousedown','touchstart','wheel','dragstart'] as const).forEach(ev=>m.on(ev,stop));
+  m.on('moveend',()=>spinStep.current());
   m.addControl(new mapboxgl.NavigationControl(),'top-right');m.addControl(new mapboxgl.ScaleControl(),'bottom-left');
   let raf=0;
   m.on('error',()=>setError('Fond Mapbox indisponible : vérifiez le réseau et les restrictions du token.'));
@@ -172,6 +228,9 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
    m.addLayer({id:'province-selected',type:'line',source:'provinces',filter:['==',['get','name'],''],paint:{'line-color':'#F0A04B','line-width':3.2}});
    m.addLayer({id:'province-label',type:'symbol',source:'provinces',minzoom:5,layout:{'text-field':['get','name'],'text-size':['interpolate',['linear'],['zoom'],5,10,9,14],'text-font':['DIN Pro Bold','Arial Unicode MS Bold'],'text-letter-spacing':.05,'text-transform':'uppercase'},paint:{'text-color':C.label,'text-halo-color':C.halo,'text-halo-width':1.6}});
    lift();
+   if(intro){m.easeTo({center:gabon?[11.5,-.6]:[18,6],zoom:gabon?5.2:1.55,duration:gabon?3200:2600,easing:EASE,essential:true});
+    if(!gabon)m.once('moveend',()=>{spin.current=true;spinStep.current();});}
+   m.on('idle',()=>{if(m.getZoom()<=2.6)CONTINENTS.forEach(c=>{if(!contCells.current[c.key])continentCells(m,c.key);});});
    m.addSource('fires',{type:'geojson',data:EMPTY});
    m.addLayer({id:'heat',type:'heatmap',source:'fires',layout:{visibility:'none'},paint:{
     'heatmap-weight':['interpolate',['linear'],['coalesce',['get','frp'],1],0,.2,100,1],
@@ -225,10 +284,13 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
      raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);}
    const fmt=(v:unknown,d=0)=>v==null||v===''?'—':Number(v).toLocaleString('fr-FR',{maximumFractionDigits:d});
    const utc=(v?:string)=>v?new Date(v).toISOString().replace('T',' ').slice(0,16)+' UTC':'—';
-   const showTip=(e:any)=>{const p:any=e.features?.[0]?.properties;if(!p)return;m.getCanvas().style.cursor='pointer';const s=SENSORS.find(x=>x.code===p.satellite);
+   const showTip=(e:any)=>{if(inspectRef.current)return;const p:any=e.features?.[0]?.properties;if(!p)return;m.getCanvas().style.cursor='pointer';const s=SENSORS.find(x=>x.code===p.satellite);
     tip.setLngLat(e.lngLat).setHTML(`<b>${s?s.label:'Détection'}</b><span>${utc(p.time)} · ${p.daynight==='D'?'jour':'nuit'}</span><span>Puissance : <strong>${fmt(p.frp,1)} MW</strong> · confiance ${({low:'faible',nominal:'nominale',high:'haute'} as any)[p.confidence]??'—'}</span>${p.vegetation===false||p.vegetation==='false'?'<span>Source non végétale</span>':''}<em>Cliquez pour la fiche complète</em>`).addTo(m);};
    ['core','points'].forEach(l=>{m.on('mousemove',l,showTip);m.on('mouseleave',l,()=>{m.getCanvas().style.cursor='';tip.remove();});
-    m.on('click',l,e=>{const id=e.features?.[0]?.properties?.id;if(id)selection.current?.(id)});});
+    m.on('click',l,e=>{if(inspectRef.current)return;const id=e.features?.[0]?.properties?.id;if(id)selection.current?.(id)});});
+   // Inspecteur : le tableau suit le curseur (données demandées après une courte pause), un clic l'épingle.
+   m.on('mousemove',e=>{if(!inspectRef.current||probeRef.current?.pinned)return;probeAtRef.current(e.point.x,e.point.y,e.lngLat.lng,e.lngLat.lat,false);});
+   m.on('move',()=>{const p=probeRef.current;if(p?.pinned){const q=m.project([p.lon,p.lat]);setProbe(o=>o&&{...o,x:q.x,y:q.y});}});
    // Survol : provinces puis pays.
    let hovC:string|number|undefined,hovP:string|number|undefined;
    m.on('mousemove','country-fill',e=>{const f=e.features?.[0];if(!f||f.id===undefined||f.id===hovC)return;if(hovC!==undefined)m.setFeatureState({source:'countries',sourceLayer:'country_boundaries',id:hovC},{hover:false});hovC=f.id;m.setFeatureState({source:'countries',sourceLayer:'country_boundaries',id:hovC},{hover:true});});
@@ -237,6 +299,7 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
    m.on('mouseleave','province-fill',()=>{if(hovP!==undefined)m.setFeatureState({source:'provinces',id:hovP},{hover:false});hovP=undefined;});
    // Clic : un point -> sa fiche ; une province -> sa fenêtre ; sinon le pays.
    m.on('click',e=>{
+    if(inspectRef.current){probeAtRef.current(e.point.x,e.point.y,e.lngLat.lng,e.lngLat.lat,true);return;}
     const live=['core','points'].filter(l=>m.getLayer(l)&&m.getLayoutProperty(l,'visibility')!=='none');
     if(live.length&&m.queryRenderedFeatures(e.point,{layers:live}).length)return;
     const prov=m.getLayoutProperty('province-fill','visibility')!=='none'?m.queryRenderedFeatures(e.point,{layers:['province-fill']})[0]:undefined;
@@ -263,6 +326,12 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
    setReady(true);
   });return()=>{cancelAnimationFrame(raf);m.remove();map.current=null;};
  },[gabon,basemap]);
+ // Changement de vue : courte transition en fondu, la caméra reste en place.
+ useEffect(()=>{const m=map.current;if(!ready||!m)return;const cur=(m.getProjection()?.name)??'mercator';if(cur===projection)return;
+  const el=m.getCanvasContainer();if(calmMotion()){m.setProjection(projection);return;}
+  el.style.transition='opacity 180ms ease';el.style.opacity='0';
+  const t=setTimeout(()=>{m.setProjection(projection);if(projection==='globe'&&m.getZoom()<3&&!zoneRef.current){spin.current=true;spinStep.current();}else spin.current=false;
+   requestAnimationFrame(()=>{el.style.opacity='1';});},180);return()=>clearTimeout(t);},[ready,projection]);
  useEffect(()=>{if(ready&&map.current){(map.current.getSource('fires') as mapboxgl.GeoJSONSource)?.setData(source?geo:EMPTY);}},[ready,geo,source]);
  useEffect(()=>{const m=map.current;if(!ready||!m)return;
   const vis=(id:string,on:boolean)=>{if(m.getLayer(id))m.setLayoutProperty(id,'visibility',on?'visible':'none');};
@@ -272,11 +341,13 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
  useEffect(()=>{const m=map.current;if(!ready||!m)return;['province-fill','province-line','province-label','province-selected'].forEach(id=>{if(m.getLayer(id))m.setLayoutProperty(id,'visibility',showProvinces?'visible':'none');});},[ready,showProvinces]);
  useEffect(()=>{const m=map.current;if(!ready||!m||!m.getLayer('country-dim'))return;
   // Le reste du monde s'assombrit progressivement, et s'éclaire de même à la fermeture.
+  if(continent){m.setFilter('country-dim',['!=',['get','region'],continent]);m.setPaintProperty('country-dim','fill-opacity',.5);return;}
   if(focusIso){m.setFilter('country-dim',['!=',['get','iso_3166_1_alpha_3'],focusIso]);m.setPaintProperty('country-dim','fill-opacity',.55);return;}
   m.setPaintProperty('country-dim','fill-opacity',0);
-  const t=setTimeout(()=>{if(m.getLayer('country-dim'))m.setFilter('country-dim',['==',['get','iso_3166_1_alpha_3'],'__none__']);},1100);return()=>clearTimeout(t);},[ready,focusIso]);
+  const t=setTimeout(()=>{if(m.getLayer('country-dim'))m.setFilter('country-dim',['==',['get','iso_3166_1_alpha_3'],'__none__']);},1100);return()=>clearTimeout(t);},[ready,focusIso,continent]);
  useEffect(()=>{const m=map.current;if(!ready||!m||!m.getSource('alert-tiles'))return;
   const list=alerts?.alerts??[];alertsRef.current=Object.fromEntries(list.map(a=>[a.id,a]));
+  if(!list.length)(m.getSource('alert-focus') as mapboxgl.GeoJSONSource)?.setData(EMPTY);
   (m.getSource('alert-tiles') as mapboxgl.GeoJSONSource).setData({type:'FeatureCollection',features:list.map(a=>{const [w,s2,e,n]=a.bbox;
    return {type:'Feature',properties:{id:a.id,rank:a.rank},geometry:{type:'Polygon',coordinates:[[[w,s2],[e,s2],[e,n],[w,n],[w,s2]]]}};})});
   (m.getSource('alert-pts') as mapboxgl.GeoJSONSource).setData({type:'FeatureCollection',features:(alerts?.points?.rows??[]).map(([lon,lat,frp,rank])=>({type:'Feature',properties:{frp,rank},geometry:{type:'Point',coordinates:[lon,lat]}}))});
@@ -292,7 +363,37 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
   // Zone en alerte : on cadre le carreau et ses abords immédiats pour situer le danger.
   zoomTo.current([w-.35,s2-.35,e+.35,n+.35],'province','alert-focus-line');
  },[ready,alertFocus?.k]);
- const fly=(center:[number,number],zoom:number)=>{const m=map.current;if(!m)return;before.current=null;if(calmMotion())m.jumpTo({center,zoom});else m.flyTo({center,zoom,curve:1.5,speed:1.1,duration:1700,easing:EASE,essential:true});};
+ const fly=(center:[number,number],zoom:number)=>{const m=map.current;if(!m)return;before.current=null;spin.current=false;if(calmMotion())m.jumpTo({center,zoom});else m.flyTo({center,zoom,bearing:0,pitch:0,curve:1.5,speed:1.1,duration:1900,easing:EASE,essential:true});};
+ /** Retour au globe entier : la zone se ferme, la carte se rebombe et reprend sa rotation. */
+ const world=()=>{closeZone(false);setAllPointsState(false);const m=map.current;if(!m)return;if(calmMotion()){m.jumpTo({center:[18,6],zoom:1.55});return;}
+  m.flyTo({center:[18,6],zoom:1.55,bearing:0,pitch:0,curve:1.4,speed:1.2,duration:2000,easing:EASE,essential:true});m.once('moveend',()=>{spin.current=true;spinStep.current();});};
+ /** Continent : contours de ses pays, maillage 0,5° pour les points, cadrage sur sa partie terrestre. */
+ const openContinent=async(c:typeof CONTINENTS[number])=>{const m=map.current;if(!m)return;spin.current=false;
+  let cells=contCells.current[c.key]??continentCells(m,c.key);
+  if(!cells.length){await new Promise(r=>{const t=setTimeout(r,3000);m.once('idle',()=>{clearTimeout(t);r(null);});});cells=continentCells(m,c.key);}
+  if(!cells.length)return;
+  m.setFilter('country-selected',['==',['get','region'],c.key]);m.setFilter('province-selected',['==',['get','name'],'']);
+  setAllPointsState(false);setZonePeriod({});setZone({kind:'continent',name:c.label,cells});
+  zoomTo.current(c.box,'continent','country-selected');};
+ /** Inspecteur : demande les chiffres autour du curseur (rayon ≈ 28 px à l'écran), avec un petit cache. */
+ const probeCache=useRef(new Map<string,Probe>());const probeTimer=useRef(0);const probeAbort=useRef<AbortController|null>(null);
+ const filtersRef=useRef<Record<string,string>>({});filtersRef.current={...filters,...(zonePeriod.start?{start_date:zonePeriod.start}:{}),...(zonePeriod.end?{end_date:zonePeriod.end}:{}),...(sensor?{sensor}:{})};
+ function probeAt(x:number,y:number,lon:number,lat:number,pinned:boolean){const m=map.current;if(!m)return;
+  const kmPx=40075*Math.cos(lat*Math.PI/180)/(512*2**m.getZoom());const r=Math.max(.5,Math.min(300,+(28*kmPx).toPrecision(2)));
+  const p=new URLSearchParams({lon:lon.toFixed(3),lat:lat.toFixed(3),radius_km:String(r)});
+  Object.entries(filtersRef.current).forEach(([k,v])=>{if(v&&['start_date','end_date','sensor','satellite','confidence'].includes(k))p.set(k,v);});
+  const key=p.toString(),hit=probeCache.current.get(key);
+  setProbe(o=>({x,y,lon,lat,pinned,data:hit??(o&&!o.error?o.data:undefined),loading:!hit}));
+  clearTimeout(probeTimer.current);if(hit)return;
+  probeTimer.current=window.setTimeout(()=>{probeAbort.current?.abort();const ac=new AbortController();probeAbort.current=ac;
+   fetch('/api/map/probe?'+key,{signal:ac.signal}).then(r=>{if(!r.ok)throw new Error(String(r.status));return r.json();}).then((d:Probe)=>{
+    probeCache.current.set(key,d);if(probeCache.current.size>200)probeCache.current.delete(probeCache.current.keys().next().value!);
+    setProbe(o=>o&&Math.abs(o.lon-lon)<1e-9&&Math.abs(o.lat-lat)<1e-9?{...o,data:d,loading:false}:o);})
+   .catch(e=>{if(e.name!=='AbortError')setProbe(o=>o&&{...o,loading:false,error:true});});},pinned?0:170);}
+ const probeAtRef=useRef(probeAt);probeAtRef.current=probeAt;
+ useEffect(()=>{if(!inspect){setProbe(null);probeAbort.current?.abort();clearTimeout(probeTimer.current);}
+  const c=map.current?.getCanvas();if(c)c.style.cursor=inspect?'crosshair':'';},[inspect]);
+ useEffect(()=>{if(!inspect)return;const k=(e:KeyboardEvent)=>{if(e.key==='Escape'){if(probeRef.current?.pinned)setProbe(null);else setInspect(false);}};addEventListener('keydown',k);return()=>removeEventListener('keydown',k);},[inspect]);
  useEffect(()=>{if(ready&&focus)fly(focus.center,focus.zoom);},[ready,focus?.k]);
  useEffect(()=>{const refit=()=>{const m=map.current,l=last.current;if(!m||!l||m.isMoving()||!document.querySelector('.cwin'))return;
    const cam=m.cameraForBounds([[l.b[0],l.b[1]],[l.b[2],l.b[3]]],{padding:framePadding(m.getContainer().getBoundingClientRect()),maxZoom:l.kind==='province'?8.6:7.4});
@@ -348,17 +449,28 @@ export function FireMap({query='',gabon=false,sensor='',onDetection,focus,export
  },[ready]);
  // Capture de la carte : le tampon WebGL est conservé (preserveDrawingBuffer) pour pouvoir être lu à tout moment.
  const snapshot=async()=>{const m=map.current;if(!m)throw new Error('carte absente');return m.getCanvas().toDataURL('image/png');};
- const closeZone=()=>{setZone(null);last.current=null;const m=map.current;const b=before.current;before.current=null;
-  if(m&&b){if(calmMotion())m.jumpTo(b);else m.flyTo({...b,curve:1.4,speed:1.2,duration:1500,easing:EASE,essential:true});}if(m?.getLayer('country-selected')){m.setFilter('country-selected',['==',['get','iso_3166_1_alpha_3'],'']);m.setFilter('province-selected',['==',['get','name'],'']);}};
+ function closeZone(back=true){setZone(null);last.current=null;const m=map.current;const b=before.current;before.current=null;
+  if(m&&b&&back){if(calmMotion())m.jumpTo(b);else m.flyTo({...b,curve:1.4,speed:1.2,duration:1500,easing:EASE,essential:true});}if(m?.getLayer('country-selected')){m.setFilter('country-selected',['==',['get','iso_3166_1_alpha_3'],'']);m.setFilter('province-selected',['==',['get','name'],'']);}}
  const d=source?.data;
  const status=error?error:!source?null:source.isError?'Chargement des points impossible. Réessayez.':source.isFetching&&!d?'Chargement des points…':d?`${d.shown.toLocaleString('fr-FR')} point${d.shown>1?'s':''}${d.partial?` sur ${d.total.toLocaleString('fr-FR')} (les plus intenses)`:''}${zone?` · ${zone.name}`:' · toute la vue'}${source.isFetching?' · mise à jour…':''}`:null;
  return <div className="map" style={{height:'100%',minHeight:380}}>
   <div ref={container} style={{position:'absolute',inset:0}}/>
-  <div className="map__ctrl map__ctrl--tl"><div className="map__views"><button onClick={()=>fly([15,5],1.1)}>Monde</button><button onClick={()=>fly([20,0],3)}>Afrique</button><button onClick={()=>fly([11.5,-.6],5)}>Gabon</button></div></div>
-  <MapDisplayControl basemap={basemap} display={display} allPoints={allPoints} provinces={showProvinces}
+  <div className="map__ctrl map__ctrl--tl"><div className="map__views" role="group" aria-label="Vues de la carte">
+   <button type="button" onClick={world} aria-pressed={!zone&&!allPoints}><Icon name="globe" size={14}/>Monde</button>
+   <ContinentMenu current={zone?.kind==='continent'?zone.name:undefined} onPick={openContinent}/>
+   <button type="button" onClick={()=>ctl.map.locatePlace?.('Gabon')} aria-pressed={zone?.name==='Gabon'}>Gabon</button>
+   <span className="map__views-sep" aria-hidden="true"/>
+   <button type="button" className="map__views-all" aria-pressed={allPoints&&!zone} onClick={()=>{if(allPoints&&!zone){setAllPointsState(false);return;}if(zone)closeZone(false);setAllPointsState(true);}}
+    title="Afficher tous les points chauds de la vue (les plus intenses au-delà de 60 000)"><Icon name="eye" size={14}/>Tout voir</button>
+   <button type="button" className="map__views-probe" aria-pressed={inspect} onClick={()=>setInspect(v=>!v)}
+    title="Inspecter : un tableau MODIS / VIIRS / harmonisé suit le curseur ; cliquez pour l’épingler (Échap pour fermer)"><Icon name="table" size={14}/>Inspecter</button>
+  </div></div>
+  <MapDisplayControl projection={projection} onProjection={setProjection} basemap={basemap} display={display} allPoints={allPoints} provinces={showProvinces}
    onBasemap={setBasemap} onDisplay={setDisplay} onAllPoints={setAllPointsState} onProvinces={setShowProvinces}
    extra={exportTools?<MapExports query={query} sensor={sensor} geo={geo} zone={zone?.name} snapshot={snapshot}/>:undefined}/>
-  {!source&&!error&&<div className="map-hint" role="status"><b>Choisissez une zone</b><span>Cliquez un pays ou une province pour afficher ses points chauds, ou activez « Afficher tous les points » dans Affichage.</span></div>}
+  {!source&&!error&&!inspect&&<div className="map-hint" role="status"><b>Choisissez une zone</b><span>Cliquez un pays ou une province, ou choisissez un continent : la carte s’y pose et ses points chauds apparaissent. « Tout voir » affiche tous les points.</span></div>}
+  {probe&&<ProbeTable p={probe} onClose={()=>setProbe(null)}/>}
+  {inspect&&!probe&&<div className="map-hint is-probe" role="status"><b>Inspecteur actif</b><span>Survolez la carte : les chiffres de chaque capteur et de l’harmonisation suivent le curseur. Cliquez pour épingler, Échap pour quitter.</span></div>}
   {zone&&<ZoneWindow zone={zone} query={query} sensor={sensor} onClose={closeZone} onPeriod={(start,end)=>setZonePeriod({start,end})}/>}
   <div className="map-note" role="status">{status??'Aucun point affiché'}<br/>{d&&d.shown?<>Survolez un point pour ses chiffres, cliquez pour sa fiche · </>:null}<b>Détection thermique ≠ incendie confirmé</b></div>
  </div>;
@@ -384,5 +496,41 @@ function MapExports({query,sensor,geo,zone,snapshot}:{query:string;sensor:string
     :<a className="map-export__btn" href={'/api/export/csv'+(qs?'?'+qs:'')} download><Icon name="download" size={16}/><span><b>Données</b><small>CSV · {total.toLocaleString('fr-FR')} lignes</small></span></a>}
   </div>
   <p className="map-display__hint" role="status">{msg||(tooMany?'Pour le CSV, réduisez la période (Chronologie) ou les capteurs.':'Le CSV reprend la sélection en cours : période, capteurs, filtres.')}</p>
+ </div>;
+}
+
+/** Menu des continents : un clic pose la carte sur le continent et affiche ses points. */
+function ContinentMenu({current,onPick}:{current?:string;onPick:(c:typeof CONTINENTS[number])=>void}){
+ const [open,setOpen]=useState(false);const ref=useRef<HTMLDivElement>(null);
+ useEffect(()=>{if(!open)return;const off=(e:MouseEvent)=>{if(!ref.current?.contains(e.target as Node))setOpen(false);};const k=(e:KeyboardEvent)=>{if(e.key==='Escape')setOpen(false);};
+  addEventListener('mousedown',off);addEventListener('keydown',k);return()=>{removeEventListener('mousedown',off);removeEventListener('keydown',k);};},[open]);
+ return <div className="map__continents" ref={ref}>
+  <button type="button" aria-haspopup="menu" aria-expanded={open} aria-pressed={!!current} onClick={()=>setOpen(v=>!v)}>{current??'Continents'}<Icon name="chevronDown" size={13}/></button>
+  {open&&<div className="map__continents-menu" role="menu">{CONTINENTS.map(c=><button key={c.key} type="button" role="menuitemradio" aria-checked={current===c.label} onClick={()=>{setOpen(false);onPick(c);}}>{c.label}</button>)}</div>}
+ </div>;
+}
+
+/** Tableau de l'inspecteur : données brutes de chaque capteur, puis ce qu'en retient l'harmonisation. */
+function ProbeTable({p,onClose}:{p:{x:number;y:number;pinned:boolean;data?:Probe;loading:boolean;error?:boolean};onClose:()=>void}){
+ const ref=useRef<HTMLDivElement>(null);const [size,setSize]=useState({w:300,h:260});
+ useEffect(()=>{const el=ref.current;if(el){const r=el.getBoundingClientRect();if(Math.abs(r.width-size.w)>2||Math.abs(r.height-size.h)>2)setSize({w:r.width,h:r.height});}});
+ const host=ref.current?.parentElement?.getBoundingClientRect();const W=host?.width??innerWidth,H=host?.height??innerHeight;
+ const left=p.x+18+size.w>W-8?Math.max(8,p.x-18-size.w):p.x+18,top=Math.max(8,Math.min(H-size.h-8,p.y+18));
+ const n=(v:number|null|undefined,d=0)=>v==null?'—':Number(v).toLocaleString('fr-FR',{maximumFractionDigits:d});
+ const d=p.data,M=d?.sensors.MODIS,V=d?.sensors.VIIRS,empty=d&&!M&&!V;
+ const rows:[string,(s:any)=>string,string?][]=[
+  ['Détections reçues',s=>n(s?.raw)],['NRT remplacées par la SP',s=>n(s?.superseded),'Version scientifique préférée au temps réel'],
+  ['Sources non végétales',s=>n(s?.non_vegetation),'Industries, volcans, torchères : écartées'],
+  ['Retenues',s=>n(s?.kept)],['Cellules 1 km',s=>n(s?.cells)],['Rapprochées MODIS–VIIRS',s=>n(s?.linked)],
+  ['Confiance haute',s=>s?.kept?`${n(s.high)} · ${Math.round(100*s.high/s.kept)} %`:'—'],['Puissance max',s=>s?.max_frp!=null?`${n(s.max_frp,1)} MW`:'—'],
+ ];
+ return <div ref={ref} className={`probe${p.pinned?' is-pinned':''}`} style={{left,top}} role={p.pinned?'dialog':'status'} aria-label="Données au point inspecté">
+  <div className="probe__head"><b>{p.pinned?'Point épinglé':'Sous le curseur'}</b><span>{d?`rayon ${n(d.radius_km,1)} km`:''}{p.loading?' · calcul…':''}</span>
+   {p.pinned&&<button type="button" onClick={onClose} aria-label="Fermer le tableau"><Icon name="x" size={14}/></button>}</div>
+  {p.error?<p className="probe__msg">Données indisponibles : serveur injoignable.</p>:!d?<p className="probe__msg">Calcul…</p>:empty?<p className="probe__msg">Aucune détection dans ce rayon sur la période.</p>:<>
+   <table><thead><tr><th/><th className="is-m">MODIS</th><th className="is-v">VIIRS</th></tr></thead>
+    <tbody>{rows.map(([l,f,t])=><tr key={l} title={t}><th>{l}</th><td>{f(M)}</td><td>{f(V)}</td></tr>)}</tbody></table>
+   <div className="probe__harmo"><span><Icon name="merge" size={13}/>Harmonisé</span><b>{n(d.harmonized.detections)}</b> détections · <b>{n(d.harmonized.cells)}</b> cellules · <b>{n(d.harmonized.groups)}</b> rapprochements</div>
+  </>}
  </div>;
 }

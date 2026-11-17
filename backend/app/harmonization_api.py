@@ -40,14 +40,21 @@ def require_admin(token: str | None) -> None:
         raise HTTPException(status_code=401, detail="Jeton d'administration absent ou invalide.")
 
 
-async def _execute(run_id: int, mode: str, parameters: dict) -> None:
+async def _execute(run_id: int, mode: str, parameters: dict, app=None) -> None:
+    from app import cache
+    changed = True
     try:
-        await pipeline.execute_run(run_id, mode, parameters)
+        result = await pipeline.execute_run(run_id, mode, parameters)
+        changed = mode == "full" or bool(result.get("rows_processed"))
     except Exception:  # l'échec est enregistré dans harmonization_runs
         log.exception("Harmonisation %s en échec", run_id)
-    finally:  # les statistiques en cache ne reflètent plus la base : on les recalculera
-        from app import cache
-        cache.clear()
+    finally:
+        # Les statistiques en cache ne reflètent plus la base : on les recalcule tout de suite,
+        # pour que les pages suivantes restent rapides. Base inchangée : le cache reste valable.
+        if changed:
+            cache.clear()
+            if app is not None:
+                app.state.warm_task = asyncio.create_task(cache.warm(app))
 
 
 @router.post("/run", status_code=202)
@@ -68,7 +75,7 @@ async def run(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     finally:
         await connection.close()
-    background.add_task(_execute, run_id, body.mode, parameters)
+    background.add_task(_execute, run_id, body.mode, parameters, request.app)
     return {"run_id": run_id, "status": "running", "mode": body.mode, "parameters": parameters}
 
 

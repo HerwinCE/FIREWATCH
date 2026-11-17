@@ -7,7 +7,7 @@ export default defineConfig({
   server: { port: 5173, proxy: { '/api': { target: api, changeOrigin: true } } },
   build: {
     // Bibliothèques lourdes isolées : mises en cache par le navigateur, téléchargées seulement si la page les utilise.
-    chunkSizeWarningLimit: 1800,
+    chunkSizeWarningLimit:2000,
     rollupOptions: {
       output: {
         manualChunks: (id: string) => {

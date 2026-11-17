@@ -42,6 +42,9 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
  const max=Math.max(1,...values);
  const selectSensor=(kind:'MODIS'|'VIIRS')=>setSensor(sensor===kind?'':kind);
  const toggle=(t:Tool)=>setTool(v=>v===t?null:t);
+ // Rail : icônes seules par défaut, noms des outils sur demande (choix mémorisé sur cet appareil).
+ const [wide,setWide]=useState(()=>{try{return localStorage.getItem('fw.rail.wide')==='1'}catch{return false}});
+ const toggleWide=()=>setWide(v=>{try{localStorage.setItem('fw.rail.wide',v?'0':'1')}catch{/* rien */}return !v;});
  useEffect(()=>{const k=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!document.querySelector('.cwin,.detail-overlay'))setTool(null)};addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[]);
  const current=TOOLS.find(t=>t.id===tool);
  // --- Alertes : détection automatique, zoom intelligent sur toute nouvelle alerte élevée ou critique ---
@@ -64,13 +67,14 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
   },1400);
   return()=>clearTimeout(t);
  },[alertData?.alerts?.[0]?.id]);
+ useEffect(()=>{if(!alerts.enabled){setBanner(null);setAlertFocus(undefined);}},[alerts.enabled]);
  const critical=(alertData?.counts?.critique??0)>0;
  const [playSignal,setPlaySignal]=useState<{k:number;days?:number}|undefined>();
  // Commandes vocales de l'écran carte (liste fermée, résultats constatés).
  useEffect(()=>{ctl.ops={
   openPanel:p=>{if(p==='timeline'){setTimelineOpen(true);return {ok:true,message:'Chronologie ouverte.'};}
    const tl=TOOLS.find(x=>x.id===p);if(!tl)return {ok:false,message:`Panneau « ${p} » inconnu.`};setTool(tl.id);return {ok:true,message:`Panneau « ${tl.label} » ouvert.`};},
-  showAlert:(level,rank=1)=>{const list=(alertData?.alerts??[]).filter(a=>!level||a.level===level);const a=list[Math.max(0,rank-1)];
+  showAlert:(level,rank=1)=>{if(!alerts.enabled)return {ok:false,message:'Les alertes sont désactivées dans les paramètres.'};const list=(alertData?.alerts??[]).filter(a=>!level||a.level===level);const a=list[Math.max(0,rank-1)];
    if(!a)return {ok:false,message:level?`Aucune alerte de niveau ${levelOf(level as any).label.toLowerCase()} en ce moment.`:'Aucune alerte en ce moment.'};
    locate(a);setTool('alerts');return {ok:true,message:`Alerte ${a.label.toLowerCase()} localisée : ${placeOf(a,names)}, ${a.cells} cellules actives, pic ${a.max_frp} MW.`};},
   playTimeline:days=>{setTimelineOpen(true);setPlaySignal({k:Date.now(),days});return {ok:true,message:`Chronologie en lecture${days?`, fenêtre de ${days} jour${days>1?'s':''}`:''}.`};},
@@ -95,19 +99,20 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
   </header>
   <div className="ops-coordinates"><span>Vue : {view}</span><span>{start||end?`${start||'…'} → ${end||latest}`:'Toute la période chargée'}</span><span>{sensor||'MODIS + VIIRS'} · UTC</span></div>
 
-  <nav className="mrail" aria-label="Outils de la carte">
+  <nav className={`mrail${wide?' is-wide':''}`} aria-label="Outils de la carte">
    {TOOLS.slice(0,1).map(t=><RailBtn key={t.id} t={t} on={tool===t.id} onClick={()=>toggle(t.id)}/>)}
-   <button type="button" data-label="Chronologie" aria-pressed={timelineOpen} onClick={()=>setTimelineOpen(v=>!v)}><Icon name="activity" size={20}/></button>
+   <button type="button" data-label="Chronologie" aria-label="Chronologie" aria-pressed={timelineOpen} onClick={()=>setTimelineOpen(v=>!v)}><Icon name="activity" size={20}/><span className="mrail__lbl">Chronologie</span></button>
    <span className="mrail__sep" aria-hidden="true"/>
    {TOOLS.slice(1,7).map(t=><RailBtn key={t.id} t={t} on={tool===t.id} onClick={()=>toggle(t.id)} badge={t.id==='alerts'&&alertData?.total?{n:alertData.total,level:alertData.top}:undefined}/>)}
    <span className="mrail__sep" aria-hidden="true"/>
    {TOOLS.slice(7).map(t=><RailBtn key={t.id} t={t} on={tool===t.id} onClick={()=>toggle(t.id)}/>)}
+   <button type="button" className="mrail__wide" aria-pressed={wide} aria-label={wide?'Réduire le rail':'Afficher les noms des outils'} data-label={wide?'Réduire':'Afficher les noms'} onClick={toggleWide}><Icon name={wide?'panelCollapse':'panelExpand'} size={16}/><span className="mrail__lbl">Réduire</span></button>
   </nav>
 
   {current&&<aside className="mtool" aria-label={current.label}>
    <div className="mtool__head"><span className={`mtool__icon${current.ember?' is-ember':''}`}><Icon name={current.icon} size={18}/></span><div><span className="mtool__kind">{current.kind}</span><h2 className="mtool__title">{current.label}</h2></div><button className="mtool__close" onClick={()=>setTool(null)} aria-label="Fermer le panneau"><Icon name="x" size={16}/></button></div>
    <div className="mtool__body" key={tool}>
-    {tool==='alerts'&&<AlertCenter data={alertData} loading={alerts.isPending} names={names} effects={settings.alertEffects!==false} autoZoom={autoZoom}
+    {tool==='alerts'&&<AlertCenter enabled={alerts.enabled} onEnabled={v=>settings.update({alerts:v})} data={alertData} loading={alerts.isPending} names={names} effects={settings.alertEffects!==false} autoZoom={autoZoom}
       onEffects={v=>settings.update({alertEffects:v})} onAutoZoom={v=>settings.update({alertAutoZoom:v})} onLocate={locate}/>}
     {tool==='layers'&&<>
      <Group label="Période"><div className="ops-period"><button onClick={()=>period(1)} className={start===latest&&end===latest?'is-on':''}>Auj.</button><button onClick={()=>period(2)} className={start===shift(latest,-1)&&end===latest?'is-on':''}>24 h</button><button onClick={()=>period(7)} className={start===shift(latest,-6)&&end===latest?'is-on':''}>7 j</button><button onClick={()=>setRange('','')} className={!start&&!end?'is-on':''}>Tout</button><label title="Choisir une date de fin"><Icon name="calendar" size={14}/><input type="date" value={end} max={latest} onChange={e=>setRange(start||e.target.value,e.target.value)} aria-label="Date de fin"/></label></div><p>{start&&end?<><b>{start} → {end}</b> · </>:null}Dates et heures en UTC.</p></Group>
@@ -130,7 +135,7 @@ export function OperationsMapScreen({query,sensor,setSensor,start,end,setRange,r
  </section>;
 }
 
-function RailBtn({t,on,onClick,badge}:{t:typeof TOOLS[number];on:boolean;onClick:()=>void;badge?:{n:number;level:string|null}}){return <button type="button" data-label={t.label} data-tone={t.ember?'ember':undefined} aria-label={badge?`${t.label} (${badge.n})`:t.label} aria-pressed={on} onClick={onClick}><Icon name={t.icon} size={20}/>{badge&&<span className={`mrail__badge is-${badge.level}`}>{badge.n>99?'99+':badge.n}</span>}</button>}
+function RailBtn({t,on,onClick,badge}:{t:typeof TOOLS[number];on:boolean;onClick:()=>void;badge?:{n:number;level:string|null}}){return <button type="button" data-label={t.label} data-tone={t.ember?'ember':undefined} aria-label={badge?`${t.label} (${badge.n})`:t.label} aria-pressed={on} onClick={onClick}><Icon name={t.icon} size={20}/><span className="mrail__lbl">{t.label}</span>{badge&&<span className={`mrail__badge is-${badge.level}`}>{badge.n>99?'99+':badge.n}</span>}</button>}
 function Group({label,children}:{label:string;children:ReactNode}){return <section className="mtool__group"><h3 className="mtool__label">{label}</h3>{children}</section>}
 function Layer({enabled,color,square,label,sub,onClick}:{enabled:boolean;color:string;square?:boolean;label:string;sub:string;onClick:()=>void}){return <button className={`ops-layer${enabled?'':' is-off'}`} onClick={onClick} aria-pressed={enabled}><i className={square?'square':''} style={{background:color,color}}/><span><b>{label}</b><small>{sub}</small></span><em>{enabled?<Icon name="eye" size={16}/>:null}</em></button>}
 function Kpi({label,value,unit,foot,tone,icon}:{label:string;value:ReactNode;unit?:string;foot?:ReactNode;tone?:string;icon?:string}){return <div className={`nx-kpi${tone?' nx-kpi--'+tone:''}`}><span>{icon&&<Icon name={icon} size={13}/>}{label}</span><b>{value}{unit&&<small> {unit}</small>}</b>{foot&&<p>{foot}</p>}</div>}

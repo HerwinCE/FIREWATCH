@@ -1,0 +1,153 @@
+/* =====================================================================
+   Globe, vues (Monde · Continents · Gabon · Tout voir · Inspecter),
+   tableau de l'inspecteur, choix du graphique de la chronologie.
+   Même verre de carte (--mg-*) que les autres éléments flottants.
+   ===================================================================== */
+
+/* ---------- Barre de vues ---------- */
+.map__views { align-items: center; flex-wrap: wrap; max-width: calc(100vw - 120px); }
+.map__views button { display: inline-flex; align-items: center; gap: 6px; }
+.map__views button svg { flex-shrink: 0; opacity: .85; }
+.map__views button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--br-primary, #4FBFAD) 20%, transparent) !important;
+  border-color: color-mix(in srgb, var(--br-primary, #4FBFAD) 60%, transparent) !important; color: var(--mg-ink) !important;
+}
+.map__views button[aria-pressed="true"] svg { color: var(--br-primary-text, #8ED9CB); opacity: 1; }
+.map__views-sep { width: 1px; height: 20px; margin: 0 4px; background: var(--mg-tile-line); }
+.map__views .map__views-probe[aria-pressed="true"] { background: rgba(233,180,76,.18) !important; border-color: rgba(233,180,76,.6) !important; }
+.map__views .map__views-probe[aria-pressed="true"] svg { color: #E9B44C; }
+
+/* Menu des continents */
+.map__continents { position: relative; display: inline-flex; }
+.map__continents > button svg { transition: transform 160ms; }
+.map__continents > button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.map__continents-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; min-width: 170px; padding: 5px; display: grid; gap: 2px;
+  background: var(--mg-bg-strong); border: 1px solid var(--mg-line); border-radius: 12px; box-shadow: var(--mg-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%);
+  animation: globe-pop 160ms cubic-bezier(.2,.8,.2,1);
+}
+.map__continents-menu button { justify-content: flex-start; width: 100%; height: 34px; }
+.map__continents-menu button[aria-checked="true"] { color: var(--br-primary-text, #8ED9CB) !important; }
+@keyframes globe-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+
+/* Indication « inspecteur actif » : même bulle que « Choisissez une zone », liseré ambre. */
+.map-hint.is-probe { border-color: rgba(233,180,76,.45) !important; }
+
+/* ---------- Tableau de l'inspecteur : suit le curseur, s'épingle au clic ---------- */
+.probe {
+  position: absolute; z-index: 25; width: max-content; max-width: min(340px, calc(100% - 16px)); padding: 10px 12px 11px;
+  background: var(--mg-bg-strong); border: 1px solid var(--mg-line); border-radius: 12px; box-shadow: var(--mg-shadow); color: var(--mg-ink);
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  font-size: 12.5px; pointer-events: none; transition: left 90ms linear, top 90ms linear, opacity 120ms;
+}
+.probe.is-pinned { pointer-events: auto; border-color: rgba(233,180,76,.55); transition: none; }
+.probe__head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.probe__head b { font-size: 13px; }
+.probe__head span { color: var(--mg-ink-2); font-variant-numeric: tabular-nums; }
+.probe__head button {
+  margin-left: auto; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+  background: transparent; border: 1px solid var(--mg-tile-line); color: var(--mg-ink-2);
+}
+.probe__head button:hover { background: var(--mg-hover); color: var(--mg-ink); }
+.probe table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.probe th, .probe td { padding: 3px 0; text-align: right; white-space: nowrap; }
+.probe tbody th { text-align: left; font-weight: 500; color: var(--mg-ink-2); padding-right: 14px; }
+.probe td { padding-left: 12px; font-weight: 650; }
+.probe thead th { font-size: 11.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding-bottom: 4px; border-bottom: 1px solid var(--mg-tile-line); }
+.probe thead th.is-m { color: #E59BC8; }
+.probe thead th.is-v { color: #F2B544; }
+.probe tbody tr + tr th, .probe tbody tr + tr td { border-top: 1px solid color-mix(in srgb, var(--mg-tile-line) 55%, transparent); }
+.probe__harmo { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--mg-tile-line); line-height: 1.5; color: var(--mg-ink-2); }
+.probe__harmo span { display: inline-flex; align-items: center; gap: 5px; margin-right: 6px; font-weight: 800; color: var(--br-primary-text, #8ED9CB); }
+.probe__harmo b { color: var(--mg-ink); }
+.probe__msg { margin: 2px 0 0; color: var(--mg-ink-2); }
+[data-theme="light"] .probe thead th.is-m { color: #A63F7E; }
+[data-theme="light"] .probe thead th.is-v { color: #9A5B00; }
+
+/* ---------- Chronologie : choix du graphique et vue mensuelle ---------- */
+.tdock__kind { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--mg-tile); border: 1px solid var(--mg-tile-line); }
+.tdock__kind button {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid transparent;
+  background: transparent; color: var(--mg-ink-2); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.tdock__kind button[aria-pressed="true"] { background: color-mix(in srgb, var(--br-primary, #4FBFAD) 20%, transparent); border-color: color-mix(in srgb, var(--br-primary, #4FBFAD) 55%, transparent); color: var(--mg-ink); }
+.tdock__month { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.tdock__month h3 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.01em; text-transform: capitalize; }
+.tdock__month p { margin: 2px 0 0; color: var(--mg-ink-2); font-size: 13px; }
+.tdock__month p b { color: #FF9D57; }
+.tdock__legend { display: flex; gap: 14px; margin-left: auto; font-size: 12px; color: var(--mg-ink-2); }
+.tdock__legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.tdock__monthly { position: relative; height: 120px; margin-top: 8px; }
+.tdock__monthly svg { display: block; width: 100%; height: 100%; overflow: visible; cursor: pointer; }
+.tdock__monthly .bar { fill: #B4532A; }
+.tdock__monthly .bar.is-hot { fill: #FF8A3D; }
+.tdock__monthly .bar.is-on { fill: #FFD166; }
+.tdock__monthly .yr { fill: var(--mg-ink-2); font-size: 11px; }
+.tdock__monthly .cursor { fill: #FF4D3D; }
+.tdock__monthly .hover { stroke: var(--mg-ink); stroke-width: 1; stroke-dasharray: 2 3; }
+
+@media (prefers-reduced-motion: reduce) { .map__continents-menu { animation: none; } .probe { transition: none; } }
+@media (max-width: 767px) {
+  .map__views { max-width: calc(100vw - 80px); }
+  .map__views-probe { display: none !important; }   /* pas de curseur sur un écran tactile */
+  .tdock__legend { margin-left: 0; }
+}
+.tdock__body > .tdock__kind { align-self: flex-start; }
+.tdock__monthwrap { display: grid; gap: 6px; }
+.tdock__years { position: relative; height: 16px; font-size: 11px; color: var(--mg-ink-2); font-variant-numeric: tabular-nums; }
+.tdock__years span { position: absolute; transform: translateX(-50%); }
+
+/* =====================================================================
+   Rail d'outils de la carte : boutons carrés réguliers, repère d'outil actif,
+   badge compact, mode « avec noms » à la demande.
+   ===================================================================== */
+.operations-map .mrail {
+  top: 88px; bottom: auto; transform: none; gap: 2px; padding: 6px;
+  max-height: calc(100% - 196px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; overscroll-behavior: contain;
+  transition: width 200ms cubic-bezier(.2,.8,.2,1);
+}
+.operations-map .mrail::-webkit-scrollbar { display: none; }
+.operations-map .mrail button {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 11px;
+}
+.operations-map .mrail button svg { flex-shrink: 0; width: 20px; height: 20px; }
+.operations-map .mrail button:hover { transform: none; }
+.mrail__lbl { display: none; }
+/* Outil ouvert : barre d'accent sur le bord intérieur, en plus du fond teinté. */
+.operations-map .mrail button[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: -6px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--br-primary, #4FBFAD);
+}
+.operations-map .mrail button[data-tone="ember"][aria-pressed="true"]::before { background: #FF8547; }
+.mrail__sep { flex-shrink: 0; margin: 4px 8px !important; opacity: .7; }
+/* Badge d'alertes : pastille compacte à cheval sur le coin, jamais tronquée. */
+.operations-map .mrail .mrail__badge { top: 2px; right: 2px; min-width: 17px; height: 15px; padding: 0 4px; font-size: 9.5px; letter-spacing: -.02em; }
+.operations-map .mrail.is-wide .mrail__badge { position: static; margin-left: auto; height: 18px; font-size: 10.5px; }
+/* Bouton « noms des outils » : plus petit et plus discret que les outils. */
+.operations-map .mrail .mrail__wide { height: 30px; margin-top: 4px; color: var(--mg-ink-2); opacity: .7; border-top: 1px solid var(--mg-tile-line) !important; border-radius: 0 0 10px 10px; }
+.operations-map .mrail .mrail__wide:hover { opacity: 1; }
+.operations-map .mrail .mrail__wide svg { width: 16px; height: 16px; }
+
+/* Mode « avec noms » : le rail s'élargit, chaque outil affiche son nom ; le panneau ouvert se décale d'autant. */
+.operations-map .mrail.is-wide { width: 232px; }
+.operations-map .mrail.is-wide button { width: 100%; justify-content: flex-start; padding: 0 12px; }
+.operations-map .mrail.is-wide .mrail__lbl { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 650; text-align: left; }
+.operations-map .mrail.is-wide button::after { display: none; }
+.operations-map .mrail.is-wide .mrail__wide { justify-content: flex-start; }
+@media (min-width: 768px) {
+  .operations-map .mtool { top: 88px; }
+  .fw-app[data-route="carte"] .va { right: 50px; }
+  .operations-map:has(.mrail.is-wide) .mtool { right: calc(52px + 232px + 14px); }
+}
+@media (max-width: 767px) {
+  .operations-map .mrail { top: auto; max-height: none; overflow: visible; }
+  .operations-map .mrail .mrail__wide { display: none; }
+  .operations-map .mrail button[aria-pressed="true"]::before { left: 10px; right: 10px; top: auto; bottom: -6px; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .operations-map .mrail { transition: none; } }
+.operations-map .mrail .mrail__wide[aria-pressed] { background: transparent !important; box-shadow: none !important; border-color: transparent !important; border-top-color: var(--mg-tile-line) !important; color: var(--mg-ink-2) !important; }
+.operations-map .mrail .mrail__wide::before { display: none; }
+.operations-map .mrail .mrail__wide:hover { background: var(--mg-hover) !important; color: var(--mg-ink) !important; }
+.map-display__seg.map-display__seg--2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.map-display__seg--2 button { white-space: nowrap; }

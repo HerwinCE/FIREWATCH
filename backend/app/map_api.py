@@ -144,3 +144,56 @@ async def region(
     return {"bbox": bbox, **dict(totals), "peak_frp": dict(peak) if peak else None,
             "busiest_day": dict(busiest) if busiest else None, "peak_month": dict(month) if month else None,
             "filters": f.description}
+
+
+@router.get("/probe")
+async def probe(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    lon: float = Query(ge=-180, le=180),
+    lat: float = Query(ge=-90, le=90),
+    radius_km: float = Query(default=10, gt=0, le=300),
+    start_date: date | None = None,
+    end_date: date | None = None,
+    sensor: Literal["MODIS", "VIIRS"] | None = None,
+    satellite: str | None = None,
+    confidence: str | None = None,
+) -> dict:
+    """Inspecteur de la carte : autour d'un point, les données de chaque capteur (brutes) et ce qu'en
+    retient l'harmonisation (meilleure version, végétation, grille commune, rapprochements MODIS–VIIRS)."""
+    f = common_filters(start_date=start_date, end_date=end_date, bbox=None, sensor_family=sensor, sensor=None,
+                       satellite=satellite, confidence=confidence, vegetation_only=False)
+    # On garde aussi les lignes écartées par l'harmonisation, pour montrer ce qu'elle a retiré.
+    where = " AND ".join(c for c in f.where.split(" AND ") if c != "NOT h.is_superseded") or "TRUE"
+    cos_lat = max(math.cos(math.radians(lat)), 0.05)
+    dlat, dlon = radius_km / 111.0, radius_km / (111.0 * cos_lat)
+    params = dict(f.params, lat=lat, lon=lon, r2=radius_km ** 2, coslat=cos_lat,
+                  s=lat - dlat, n=lat + dlat, w=lon - dlon, e=lon + dlon)
+    space = ("h.latitude BETWEEN :s AND :n AND h.longitude BETWEEN :w AND :e AND "
+             "power((h.latitude - :lat) * 111.0, 2) + power((h.longitude - :lon) * 111.0 * :coslat, 2) <= :r2")
+    kept = "h.is_vegetation AND NOT h.is_superseded"
+    rows = (await db.execute(text(f"""
+        SELECT h.sensor_family AS family, COUNT(*) AS raw,
+               COUNT(*) FILTER (WHERE h.is_superseded) AS superseded,
+               COUNT(*) FILTER (WHERE NOT h.is_vegetation AND NOT h.is_superseded) AS non_vegetation,
+               COUNT(*) FILTER (WHERE {kept}) AS kept,
+               COUNT(DISTINCT h.grid_cell_id) FILTER (WHERE {kept}) AS cells,
+               COUNT(*) FILTER (WHERE {kept} AND h.group_id IS NOT NULL) AS linked,
+               COUNT(*) FILTER (WHERE {kept} AND h.confidence_level = 'high') AS high,
+               COUNT(*) FILTER (WHERE {kept} AND h.confidence_level = 'nominal') AS nominal,
+               COUNT(*) FILTER (WHERE {kept} AND h.confidence_level = 'low') AS low,
+               MAX(h.frp_mw) FILTER (WHERE {kept}) AS max_frp,
+               ROUND(AVG(h.frp_mw) FILTER (WHERE {kept})::numeric, 1) AS mean_frp,
+               MAX(h.acquired_at) FILTER (WHERE {kept}) AS last_time
+        FROM firewatch.harmonized_detections h WHERE {where} AND {space} GROUP BY 1"""), params)).mappings().all()
+    total = (await db.execute(text(f"""
+        SELECT COUNT(*) AS detections, COUNT(DISTINCT h.grid_cell_id) AS cells,
+               COUNT(DISTINCT h.group_id) AS groups, MAX(h.frp_mw) AS max_frp
+        FROM firewatch.harmonized_detections h WHERE {where} AND {space} AND {kept}"""), params)).mappings().one()
+    sensors = {}
+    for r in rows:
+        d = dict(r)
+        d["last_time"] = d["last_time"].isoformat() if d["last_time"] else None
+        d["mean_frp"] = float(d["mean_frp"]) if d["mean_frp"] is not None else None
+        sensors[d.pop("family")] = d
+    return {"lon": lon, "lat": lat, "radius_km": radius_km, "sensors": sensors,
+            "harmonized": dict(total), "period": {"start": start_date, "end": end_date}}
