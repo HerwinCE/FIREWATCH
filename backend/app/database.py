@@ -21,6 +21,8 @@ def async_url(url: str) -> tuple[str, dict]:
     ssl = query.pop("sslmode", None) or query.pop("ssl", None)
     query.pop("channel_binding", None)
     connect_args: dict = {"statement_cache_size": 0} if SERVERLESS else {}
+    if SERVERLESS:  # répartiteur de connexions Neon (PgBouncer) : pas de cache de requêtes préparées
+        query["prepared_statement_cache_size"] = "0"
     if ssl and ssl != "disable":
         connect_args["ssl"] = "require"
     return urlunsplit((scheme, parts.netloc, parts.path, urlencode(query), "")), connect_args
