@@ -42,7 +42,11 @@ class HarmonizationBusy(RuntimeError):
 
 
 def connection_url() -> str:
-    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    """URL asyncpg directe (sans le préfixe SQLAlchemy, sans channel_binding que asyncpg refuse)."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    parts = urlsplit(settings.database_url)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k != "channel_binding"]
+    return urlunsplit(("postgresql", parts.netloc, parts.path, urlencode(query), ""))
 
 
 def build_parameters(cluster_max_km: float | None = None, cluster_max_hours: float | None = None) -> dict:

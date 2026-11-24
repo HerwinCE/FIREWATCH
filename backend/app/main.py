@@ -35,9 +35,36 @@ app.include_router(voice_router)
 app.middleware("http")(cache.response_cache)
 
 
+# Limite des appels à l'IA (clé Gemini) par adresse IP, hors développement local.
+AI_PREFIXES = ("/api/assistant/ask", "/api/voice/turn", "/api/voice/transcribe", "/api/voice/speak")
+_ai_calls: dict[str, list[float]] = {}
+
+
+@app.middleware("http")
+async def _limit_ai(request, call_next):
+    if settings.environment != "development" and request.method == "POST" and request.url.path.startswith(AI_PREFIXES):
+        import time
+
+        from fastapi.responses import JSONResponse
+
+        ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()
+        now = time.monotonic()
+        recent = [t for t in _ai_calls.get(ip, []) if now - t < 600]
+        if len(recent) >= settings.ai_requests_per_10min:
+            return JSONResponse({"detail": "Trop de demandes à l'assistant : réessayez dans quelques minutes."}, status_code=429)
+        recent.append(now)
+        _ai_calls[ip] = recent
+        if len(_ai_calls) > 5000:
+            _ai_calls.clear()
+    return await call_next(request)
+
+
 @app.on_event("startup")
 async def _warm_cache() -> None:
-    app.state.warm_task = asyncio.create_task(cache.warm(app))
+    # En serverless, chaque démarrage à froid lancerait toutes les requêtes lourdes : on s'en abstient.
+    from app.database import SERVERLESS
+    if not SERVERLESS:
+        app.state.warm_task = asyncio.create_task(cache.warm(app))
 
 
 @app.get("/api/health", tags=["system"])

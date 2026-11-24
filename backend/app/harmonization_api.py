@@ -64,6 +64,8 @@ async def run(
     body: RunRequest | None = None,
     x_admin_token: Annotated[str | None, Header()] = None,
 ) -> dict:
+    if settings.read_only:
+        raise HTTPException(status_code=403, detail="Démo en ligne : l'harmonisation se lance sur l'installation locale.")
     if not local_dev(request):
         require_admin(x_admin_token)
     body = body or RunRequest()

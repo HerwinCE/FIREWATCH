@@ -1,0 +1,12 @@
+# Rien de lourd ni de local n'est envoyé à Vercel.
+backend/.venv
+backend/tests
+backend/.pytest_cache
+**/__pycache__
+**/node_modules
+firewatch-africa/dist
+data/raw
+*.log
+.env
+.env.*
+!.env.example

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.8-flash"
     # Assistant vocal : modèle rapide en premier (latence à l'oral).
     voice_model: str = "gemini-3.5-flash-lite"
+    # Démo en ligne : aucune écriture (harmonisation désactivée), base allégée.
+    read_only: bool = False
+    # Appels à l'IA (assistant, voix) par adresse IP et par tranche de 10 minutes, hors développement.
+    ai_requests_per_10min: int = 40
 
     model_config = SettingsConfigDict(
         env_file=".env",

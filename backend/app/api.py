@@ -95,8 +95,8 @@ async def detection(detection_id: UUID, db: DbSession) -> dict:
                h.is_superseded, h.harmonization_run_id, r.version AS harmonization_version,
                raw.payload AS original_data
         FROM firewatch.harmonized_detections h
-        JOIN firewatch.detections d ON d.id = h.detection_id
-        JOIN firewatch.harmonization_runs r ON r.id = h.harmonization_run_id
+        LEFT JOIN firewatch.detections d ON d.id = h.detection_id
+        LEFT JOIN firewatch.harmonization_runs r ON r.id = h.harmonization_run_id
         LEFT JOIN firewatch.raw_detections raw ON raw.id = d.raw_detection_id
         WHERE h.detection_id = :detection_id"""), {"detection_id": detection_id})
     item = result.mappings().first()

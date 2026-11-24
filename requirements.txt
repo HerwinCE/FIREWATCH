@@ -1,0 +1,7 @@
+# Dépendances de l'API pour Vercel (fonction Python api/index.py). Développement local : backend/requirements.txt
+fastapi==0.115.6
+SQLAlchemy==2.0.36
+greenlet==3.1.1
+asyncpg==0.30.0
+pydantic-settings==2.7.1
+httpx==0.28.1

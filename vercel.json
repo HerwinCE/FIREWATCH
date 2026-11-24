@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd firewatch-africa && npm ci",
+  "buildCommand": "cd firewatch-africa && npm run build",
+  "outputDirectory": "firewatch-africa/dist",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "{backend/app/**,data/boundaries/**}",
+      "excludeFiles": "{backend/.venv/**,backend/tests/**,firewatch-africa/**,data/raw/**}",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ]
+}
