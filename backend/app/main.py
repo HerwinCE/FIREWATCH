@@ -33,6 +33,10 @@ app.include_router(alerts_router)
 app.include_router(voice_router)
 # Cache des statistiques (voir app/cache.py) et préchauffage du tableau de bord au démarrage.
 app.middleware("http")(cache.response_cache)
+# Réponses JSON compressées (la série quotidienne passe de ~950 Ko à ~100 Ko).
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 # Limite des appels à l'IA (clé Gemini) par adresse IP, hors développement local.

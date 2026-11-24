@@ -3,6 +3,7 @@
   "installCommand": "cd firewatch-africa && npm ci",
   "buildCommand": "cd firewatch-africa && npm run build",
   "outputDirectory": "firewatch-africa/dist",
+  "regions": ["fra1"],
   "functions": {
     "api/index.py": {
       "includeFiles": "{backend/app/**,data/boundaries/**}",
